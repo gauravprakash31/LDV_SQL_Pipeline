@@ -132,7 +132,6 @@ IMPORT FOREIGN SCHEMA public
 	)
 	FROM SERVER productsapi_srv INTO stage_sch;
 
-/* PRODUCTS */
 --products
 CREATE TABLE clean_sch.products AS
 SELECT
