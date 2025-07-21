@@ -15,7 +15,7 @@ OPTIONS(host 'localhost', port '5432', dbname 'orders_db');
 
 CREATE USER MAPPING FOR CURRENT_USER
 SERVER ordersapi_srv
-OPTIONS(user 'postgres_fdw', password 'postgres_fdw1');
+OPTIONS(user 'postgres', password 'Sharvari04');
 
 IMPORT FOREIGN SCHEMA public
 	LIMIT TO (
@@ -57,7 +57,7 @@ OPTIONS(host 'localhost', port '5432', dbname 'products_db');
 
 CREATE USER MAPPING FOR CURRENT_USER
 SERVER productsapi_srv
-OPTIONS(user 'postgres_fdw', password 'postgres_fdw1');
+OPTIONS(user 'postgres', password 'Sharvari04');
 
 IMPORT FOREIGN SCHEMA public
 	LIMIT TO (
@@ -79,7 +79,7 @@ OPTIONS(host 'localhost', port '5432', dbname 'locations_db');
 
 CREATE USER MAPPING FOR CURRENT_USER
 SERVER locationsapi_srv
-OPTIONS(user 'postgres_fdw', password 'postgres_fdw1');
+OPTIONS(user 'postgres', password 'Sharvari04');
 
 IMPORT FOREIGN SCHEMA public
 	LIMIT TO (
@@ -98,7 +98,7 @@ OPTIONS(host 'localhost', port '5432', dbname 'payments_db');
 
 CREATE USER MAPPING FOR CURRENT_USER
 SERVER paymentsapi_srv
-OPTIONS(user 'postgres_fdw', password 'postgres_fdw1');
+OPTIONS(user 'postgres', password 'Sharvari04');
 
 IMPORT FOREIGN SCHEMA public
 	LIMIT TO (
@@ -124,7 +124,7 @@ OPTIONS(host 'localhost', port '5432', dbname 'users_db');
 
 CREATE USER MAPPING FOR CURRENT_USER
 SERVER usersapi_srv
-OPTIONS(user 'postgres_fdw', password 'postgres_fdw1');
+OPTIONS(user 'postgres', password 'Sharvari04');
 
 IMPORT FOREIGN SCHEMA public
 	LIMIT TO (
