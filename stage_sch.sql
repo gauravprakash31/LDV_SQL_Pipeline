@@ -25,7 +25,8 @@ IMPORT FOREIGN SCHEMA public
 		"OrderHistory",
 		"Reservations",
 		"OrderCoupons",
-		"Coupons"
+		"Coupons",
+		"PartnerId"
 	)
 	FROM SERVER ordersapi_srv INTO stage_sch;
 
@@ -83,7 +84,8 @@ OPTIONS(user 'postgres', password 'Sharvari04');
 
 IMPORT FOREIGN SCHEMA public
 	LIMIT TO (
-		"Locations"
+		"Locations",
+		"SiteId"
 	)
 	FROM SERVER locationsapi_srv INTO stage_sch;
 
@@ -104,7 +106,9 @@ IMPORT FOREIGN SCHEMA public
 	LIMIT TO (
 		"Partners",
 		"PaymentTransactions",
-		"PaymentRefund"
+		"PartnerId",
+		"PaymentRefund",
+		"RefundedTotal"
 	)
 	FROM SERVER paymentsapi_srv INTO stage_sch;
 

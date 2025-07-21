@@ -1,146 +1,142 @@
-DROP SCHEMA clean_sch CASCADE;
-CREATE SCHEMA clean_sch;
+-- =======================
+-- CLEAN LAYER REBUILD
+-- =======================
+DROP SCHEMA IF EXISTS clean_sch CASCADE;
+CREATE SCHEMA IF NOT EXISTS clean_sch;
 
-/* ORDERS */
---orders
+-- ----- orders -----
 CREATE TABLE clean_sch.orders AS
 SELECT
-	"Id" 					AS order_id,
-	"ReservationId" 		AS reservation_id,
-	"PaymentTransactionId" 	AS payment_transaction_id,
-	"CreatedBy"				AS created_by,
-	"BookingFee" 			AS booking_fee,
-	"DeliveryFee" 			AS delivery_fee,
-	"Total" 				AS total,
-	"OrderNumber" 			AS order_number
-FROM stage_sch.orders
-WHERE "Id" = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404';
+  "Id"                   AS order_id,
+  "ReservationId"        AS reservation_id,
+  "PaymentTransactionId" AS payment_transaction_id,
+  "CreatedBy"            AS created_by,
+  "BookingFee"           AS booking_fee,
+  "DeliveryFee"          AS delivery_fee,
+  "Total"                AS total,
+  "OrderNumber"          AS order_number
+FROM stage_sch.orders;
 
---order_items
+-- ----- order_items -----
 CREATE TABLE clean_sch.order_items AS
 SELECT
-	"Id"					AS order_items_id,
-	"OrderId"				AS order_id,
-	"ProductId"				AS product_id,
-	"LocationId"			AS location_id,
-	"SiteId"				AS site_id,
-	"RentalTypeId"			AS rental_type_id,
-	"CouponDiscount"		AS coupon_discount,
-	"Tip"					AS tip,
-	"Discount"				AS discount,
-	"SalesTax"				AS sales_tax,
-	"TotalAmount"			AS total_amount,
-	"CreatedOn"				AS created_on,
-	"IsRefunded"			AS is_refunded,
-	"StartDate"				AS start_date,
-	"EndDate"				AS end_date
-FROM stage_sch.order_items
-WHERE "OrderId" = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404';
+  "Id"           AS order_items_id,
+  "OrderId"      AS order_id,
+  "ProductId"    AS product_id,
+  "LocationId"   AS location_id,
+  "SiteId"       AS site_id,
+  "RentalTypeId" AS rental_type_id,
+  "CouponDiscount" AS coupon_discount,
+  "Tip"            AS tip,
+  "Discount"       AS discount,
+  "SalesTax"       AS sales_tax,
+  "TotalAmount"    AS total_amount_items,
+  1                AS total_items,      -- each row = 1 line item (placeholder)
+  "CreatedOn"      AS created_on_items,
+  "IsRefunded"     AS is_refunded,
+  "StartDate"      AS start_date,
+  "EndDate"        AS end_date,
+  NULL::uuid       AS partner_id        -- will update later
+FROM stage_sch.order_items;
 
---order_item_history
-CREATE TABLE clean_sch.order_item_history AS
-SELECT
-	"Id"					AS order_item_history_id,
-	"OrderId"				AS order_id,
-	"ProductId"				AS product_id,
-	"LocationId"			AS location_id,
-	"SiteId"				AS site_id,
-	"CreatedOn"				AS created_on
---  "LineItemId"			AS line_item_id, -- is the order item tables id-- have to use joins
---  "PaymentTransactionId"	AS payment_transaction_id	
-FROM stage_sch.order_items_hist
-WHERE "OrderId" = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404';
-
---order_history
+-- ----- order_history -----
 CREATE TABLE clean_sch.order_history AS
 SELECT
-	"Id" 					AS order_history_id,
-	"OrderId"				AS order_id,
-	"UserId"				AS user_id,
-	"RefundedTotal"			AS refunded_total,
-	"RefundOrderNumber"		AS refund_order_number
-FROM stage_sch.order_hist 
-WHERE "OrderId" = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404';
+  "Id"              AS order_history_id,
+  "OrderId"         AS order_id,
+  "UserId"          AS user_id,
+  "RefundedTotal"   AS refunded_total,
+  "RefundOrderNumber" AS refund_order_number
+FROM stage_sch.order_hist;
 
-/* RESERVATIONS */
---reservations
+-- ----- order_items_history -----
+CREATE TABLE clean_sch.order_items_history AS
+SELECT
+  "Id"         AS order_items_history_id,
+  "OrderId"    AS order_id,
+  "ProductId"  AS product_id,
+  "LocationId" AS location_id,
+  "SiteId"     AS site_id,
+  "CreatedOn"  AS created_on
+FROM stage_sch.order_items_hist;
+
+-- ----- reservations -----
 CREATE TABLE clean_sch.reservations AS
 SELECT
-	"Id"					AS reservation_id,
-	"ReservationCode"		AS reservation_code
+  "Id"             AS reservation_id,
+  "ReservationCode" AS reservation_code
 FROM stage_sch.reservations;
 
-/* USERS */
---users
+-- ----- users -----
 CREATE TABLE clean_sch.users AS
 SELECT
-	"Id"					AS users_id,
-	CONCAT("FirstName", ' ', "LastName") AS user_name
---	"CreatedBy"				AS created_by -- All the places that say "created by" is their foreign key, what do i do? its all different everywhere
+  "Id" AS users_id,
+  CONCAT("FirstName", ' ', "LastName") AS user_name
 FROM stage_sch.users;
-SELECT * FROM clean_sch.users;
 
-/* PRODUCTS */
---products
+-- ----- products -----
 CREATE TABLE clean_sch.products AS
 SELECT
-	"Id" 					AS product_id,
-	"Name"					AS product_name
+  "Id"   AS product_id,
+  "Name" AS product_name
 FROM stage_sch.products;
 
---rental_types
+-- ----- rental_types -----
 CREATE TABLE clean_sch.rental_types AS
-SELECT 
-	"Id" 					AS rental_types_id,
-	"Name"					AS rental_name
+SELECT
+  "Id"   AS rental_types_id,
+  "Name" AS rental_name
 FROM stage_sch.rental_types;
 
-/* LOCATIONS */
---locations
+-- ----- locations -----
 CREATE TABLE clean_sch.locations AS
-SELECT 
-	"Id"					AS location_id,
---  "SiteId"				AS site_id,	
-	"Name"					AS location_name,
-	"TaxRate"				AS tax_rate
-
--- what are subsite name and subsite taxrate?	
+SELECT
+  "Id"      AS location_id,
+--"SiteId"  AS site_id, -- what to do its still not ther
+  "Name"    AS location_name,
+  "TaxRate" AS tax_rate
 FROM stage_sch.locations;
 
-/* PAYMENTS */
---payment_transactions
+-- ----- payment_transactions -----
 CREATE TABLE clean_sch.payment_transactions AS
 SELECT
-	"Id"					AS payment_transaction_id,
-	"OrderId"				AS order_id,
---	"PartnerId"				AS partner_id,
-	"ProcessingFee"			AS processing_fee,
-	"Source"				AS "source", --put this in double quotes cause its a func name
-	"Amount"				AS amount,
-	"PaymentType"			AS payment_type,
-	"PaymentProviderName"	AS payment_provider_name
-FROM stage_sch.payment_transactions
-WHERE "OrderId" = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404';
+  "Id"                AS payment_transaction_id,
+  "OrderId"           AS order_id,
+--"PartnerId"         AS partner_id,
+  "ProcessingFee"     AS processing_fee,
+  "Source"            AS source,
+  "Amount"            AS amount,
+  "PaymentType"       AS payment_type,
+  "PaymentProviderName" AS payment_provider_name
+FROM stage_sch.payment_transactions;
 
---partners
-CREATE TABLE clean_sch.partners AS
-SELECT
-	"Id" 					AS partner_id,
-	"Name"					AS partner_name
-FROM stage_sch.partners;
-	
---payment_refund-- in stage_sch (connected to refund and payment transaction id)
+-- ----- payment_refund -----
 CREATE TABLE clean_sch.payment_refund AS
 SELECT
-	"Id" 					AS payment_refund_id,
-	"PaymentTransactionId" 	AS payment_transaction_id,
-	"RefundedProcessingFee"	AS refunded_processing_fee
+  "Id"                   AS payment_refund_id,
+  "PaymentTransactionId" AS payment_transaction_id,
+  "RefundedProcessingFee" AS refunded_processing_fee
+--"RefundedTotal"        AS refunded_total
 FROM stage_sch.payment_refund;
 
-/* COUPONS */
---coupons
+-- ----- partners -----
+CREATE TABLE clean_sch.partners AS
+SELECT
+  "Id"   AS partner_id,
+  "Name" AS partner_name
+FROM stage_sch.partners;
+
+-- ----- coupons (lookups) -----
 CREATE TABLE clean_sch.coupons AS
 SELECT
-	"Id" 					AS coupon_id,
-	"CouponCode"			AS coupon_code
+  "Id"         AS coupon_id,
+  "CouponCode" AS coupon_code
 FROM stage_sch.coupons;
+
+-- ----- order_coupons (bridge) -----
+CREATE TABLE clean_sch.order_coupons AS
+SELECT
+  "OrderId"     AS order_id,
+  "OrderItemId" AS order_items_id,
+  "CouponId"    AS coupon_id
+FROM stage_sch.order_coupons;
