@@ -1,5 +1,7 @@
 /*ORDERS_DB*/
 --orders
+CREATE SCHEMA IF NOT EXISTS clean_sch;
+
 DROP TABLE IF EXISTS clean_sch.orders;
 CREATE TABLE clean_sch.orders AS
 SELECT
@@ -10,7 +12,7 @@ SELECT
 	"BookingFee" 			AS booking_fee,
 	"Total" 				AS total,
 	"OrderNumber" 			AS order_number
-FROM stage_sch."Orders"
+FROM stage_sch.orders
 WHERE "Id" = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404';
 
 
@@ -36,7 +38,7 @@ SELECT
 	"StartDate"				AS start_date,
 	"EndDate"				AS end_date,
 	"PartnerId"				AS partner_id
-FROM stage_sch."OrderItems"
+FROM stage_sch.order_items
 WHERE "OrderId" = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404';
 
 --order_history
@@ -48,12 +50,13 @@ SELECT
 	"UserId"				AS user_id,
 	"RefundedTotal"			AS refunded_total,
 	"RefundOrderNumber"		AS refund_order_number
-FROM stage_sch."OrderHistory"
+	
+FROM stage_sch.order_history
 WHERE "OrderId" = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404';
 
 --order_item_history
-DROP TABLE IF EXISTS clean_sch.order_item_history;
-CREATE TABLE clean_sch.order_item_history AS
+DROP TABLE IF EXISTS clean_sch.order_items_history;
+CREATE TABLE clean_sch.order_items_history AS
 SELECT
 	"Id"					AS order_item_history_id,
 	"OrderId"				AS order_id,
@@ -62,7 +65,7 @@ SELECT
 	"SiteId"				AS site_id,
 	"CreatedOn"				AS created_on,
 	"TotalAmount"			AS total_amount_items_history	
-FROM stage_sch."OrderItemsHistory"
+FROM stage_sch.order_items_history
 WHERE "OrderId" = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404';
 
 --reservations
@@ -71,7 +74,7 @@ CREATE TABLE clean_sch.reservations AS
 SELECT
 	"Id"					AS reservation_id,
 	"ReservationCode"		AS reservation_code
-FROM stage_sch."Reservations";
+FROM stage_sch.reservations;
 
 ---order_coupons
 DROP TABLE IF EXISTS clean_sch.order_coupons;
@@ -81,7 +84,7 @@ SELECT
 	"OrderId" 				AS order_id,
 	"CouponId"				AS coupon_id,
 	"OrderItemId"			AS order_item_id
-FROM stage_sch."OrderCoupons";
+FROM stage_sch.order_coupons;
 
 --coupons
 DROP TABLE IF EXISTS clean_sch.coupons;
@@ -89,8 +92,36 @@ CREATE TABLE clean_sch.coupons AS
 SELECT
 	"Id" 					AS coupon_id,
 	"CouponCode"			AS coupon_code
-FROM stage_sch."Coupons";
+FROM stage_sch.coupons;
 
+
+--Dynamic Tables
+--DC_Values
+DROP TABLE IF EXISTS clean_sch.dc_values_o;
+CREATE TABLE clean_sch.dc_values_o AS
+SELECT
+
+	"OrderId" 					AS dc_order_id_o,
+	"DynamicControlOptionId"	AS dc_option_id_o
+	
+FROM stage_sch.dc_values_o;
+
+--DC_Values
+DROP TABLE IF EXISTS clean_sch.dc_options_o;
+CREATE TABLE clean_sch.dc_o AS
+SELECT
+	"Id" 						AS dc_option_id_o,
+	"DynamicControlId"			AS dc_id_o,
+	"Option"					AS dc_option_o
+FROM stage_sch.dc_options_o;
+
+--DC_Values
+DROP TABLE IF EXISTS clean_sch.dc_o;
+CREATE TABLE clean_sch.dc_o AS
+SELECT
+	"Id" 			AS dc_id_o,
+	"Name"			AS dc_name_o
+FROM stage_sch.dc_o;
 
 --/* PRODUCTS_DB */
 --products
@@ -99,7 +130,7 @@ CREATE TABLE clean_sch.products AS
 SELECT
 	"Id" 					AS product_id,
 	"Name"					AS product_name
-FROM stage_sch."Products";
+FROM stage_sch.products;
 
 --rental_types
 DROP TABLE IF EXISTS clean_sch.rental_types;
@@ -107,7 +138,7 @@ CREATE TABLE clean_sch.rental_types AS
 SELECT 
 	"Id" 					AS rental_types_id,
 	"Name"					AS rental_name
-FROM stage_sch."RentalTypes";
+FROM stage_sch.rental_types;
 
 
 /* LOCATIONS */
@@ -119,7 +150,7 @@ SELECT
 	"Id"					AS location_id,	
 	"Name"					AS location_name,
 	"TaxRate"				AS tax_rate
-FROM stage_sch."Locations";
+FROM stage_sch.locations;
 
 /* USERS */
 
@@ -130,7 +161,7 @@ SELECT
 	"Id"					AS users_id,
 	CONCAT("FirstName", ' ', "LastName") AS user_name
 --	"CreatedBy"				AS created_by -- All the places that say "created by" is their foreign key, what do i do? its all different everywhere
-FROM stage_sch."Users";
+FROM stage_sch.users;
 
 
 /* PAYMENTS */
@@ -146,7 +177,7 @@ SELECT
 	"Amount"				AS amount,
 	"PaymentType"			AS payment_type,
 	"PaymentProviderName"	AS payment_provider_name
-FROM stage_sch."PaymentTransactions"
+FROM stage_sch.payment_transactions
 WHERE "OrderId" = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404';
 
 --partners
@@ -155,7 +186,7 @@ CREATE TABLE clean_sch.partners AS
 SELECT
 	"Id" 					AS partner_id,
 	"Name"					AS partner_name
-FROM stage_sch."Partners";
+FROM stage_sch.partners;
 	
 --payment_refund-- in stage_sch (connected to refund and payment transaction id)
 DROP TABLE IF EXISTS clean_sch.payment_refund;
@@ -164,5 +195,5 @@ SELECT
 	"Id" 					AS payment_refund_id,
 	"PaymentTransactionId" 	AS payment_transaction_id,
 	"RefundedProcessingFee"	AS refunded_processing_fee
-FROM stage_sch."PaymentRefund";
+FROM stage_sch.payment_refund;
 
