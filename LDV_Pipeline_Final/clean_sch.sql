@@ -64,6 +64,13 @@ SELECT
 FROM stage_sch.order_items_history
 WHERE "OrderId" = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404';
 
+-- orders dynamic controls
+CREATE TABLE clean_sch.dynamic_controls_o AS
+SELECT
+    "Id"        AS dc_id,
+    "Name"      AS dc_name
+FROM stage_orders.dynamic_controls_o;
+
 
 -- RESERVATIONS	(orders_db)
 
@@ -101,6 +108,38 @@ SELECT
 	"Name"					AS rental_name
 FROM stage_sch.rental_types;
 
+-- products dynamic controls
+CREATE TABLE clean_sch.dynamic_controls_p  AS
+SELECT
+    "Id"    AS dc_id_p,
+    "Name"  AS dc_name_p
+FROM stage_products.dynamic_controls_p;
+
+CREATE TABLE clean_sch.dynamic_control_options_p AS
+SELECT
+    "Id"               AS dc_option_id_p,
+    "DynamicControlId" AS dc_id_p,
+    "Option"           AS dc_option_p
+FROM stage_products.dynamic_control_options_p;
+
+CREATE TABLE clean_sch.product_dynamic_control_values_p AS
+SELECT
+    "ProductId"             AS product_id,
+    "DynamicControlOptionId" AS dc_option_id_p
+FROM stage_products.product_dynamic_control_values_p;
+
+CREATE TABLE clean_sch.dynamic_control_product_mappings_p AS
+SELECT
+    "ProductId"             AS product_id,
+    "DynamicControlOptionId" AS dc_option_id_p
+FROM stage_products.dynamic_control_product_mappings_p;
+
+CREATE TABLE clean_sch.dynamic_control_role_mappings_p AS
+SELECT
+    "RoleId"            AS role_id,
+    "DynamicControlId"  AS dc_id_p
+FROM stage_products.dynamic_control_role_mappings_p;
+
 
 -- LOCATIONS (locations_db)
 
@@ -111,6 +150,38 @@ SELECT
 	"Name"					AS location_name,
 	"TaxRate"				AS tax_rate
 FROM stage_sch.locations;
+
+-- locations dynamic controls
+CREATE TABLE clean_sch.dynamic_controls_l  AS
+SELECT
+    "Id"    AS dc_id_l,
+    "Name"  AS dc_name_l
+FROM stage_locations.dynamic_controls_l;
+
+CREATE TABLE clean_sch.dynamic_control_options_l AS
+SELECT
+    "Id"               AS dc_option_id_l,
+    "DynamicControlId" AS dc_id_l,
+    "Option"           AS dc_option_l
+FROM stage_locations.dynamic_control_options_l;
+
+CREATE TABLE clean_sch.location_dynamic_control_values_l AS
+SELECT
+    "LocationId"            AS location_id,
+    "DynamicControlOptionId" AS dc_option_id_l
+FROM stage_locations.location_dynamic_control_values_l;
+
+CREATE TABLE clean_sch.dynamic_control_location_mappings_l AS
+SELECT
+    "LocationId"            AS location_id,
+    "DynamicControlOptionId" AS dc_option_id_l
+FROM stage_locations.dynamic_control_location_mappings_l;
+
+CREATE TABLE clean_sch.dynamic_control_role_mappings_l AS
+SELECT
+    "RoleId"           AS role_id,
+    "DynamicControlId" AS dc_id_l
+FROM stage_locations.dynamic_control_role_mappings_l;
 
 
 -- COUPONS (orders_db)
