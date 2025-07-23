@@ -3,41 +3,46 @@ DROP TABLE IF EXISTS reporting_sch.order_report_final;
 
 CREATE TABLE reporting_sch.order_report_final AS
 SELECT
-    reservation_code,
-    order_number,
-    order_items_id                     AS line_item_id,
-    order_date,
-    user_name,
-    product_name,
-    start_date,
-    end_date,
-    location_name                      AS location,
-    site_name                          AS substitue_location,
-    tax_percentage,
-    promo_code_id,
-    coupon_discount,
-    line_item_discount,
-    gratuity                           AS tip,
-    final_line_item_sub_total          AS line_subtotal,
-    booking_fee,
-    delivery_fee,
-    create_lineitem_processing_fee     AS processing_fee,
-    refund_lineitem_processing_fee     AS processing_fee_refund,
-    total_lineitem_processing_fee      AS processing_fee_total,
-    sales_tax,
-    total_collected,
-    order_level_refund,
-    paid_amount,
-    order_type                         AS order_source,
-    payment_type,
-    payment_provider_name,
-    partner_name,
-    is_refunded
+    reservation_code				AS "RID",
+    order_number					AS "Order Id",
+    order_items_id                  AS "Line Item Id",
+    order_date						AS "Order Date",
+	original_order_amount 			AS "Original Order Amount",
+	order_refunded_amount			AS "Order Refunded Amount",
+	order_amount					AS "Order Amount", -- tried ROUND() but not working
+	order_type						AS "OrderType",
+	payment_type					AS "Payment Method",
+    payment_provider_name			AS "Payment Processer",
+    is_refunded						AS "Refunded?",
+	user_name						AS "User",
+	product_name					AS "Product Name",
+    start_date						AS "Rental Start Date",
+    end_date						AS "Rental End Date",
+    location_name                   AS "Location",
+    site_name                       AS "Substitue Location",
+  --tax_percentage,-- is this the *Tax Counties* thing? why does it say Later in the description
+  	total_items						AS "Line Item Sub Total",
+	promo_code_id					AS "Promo Code Id",
+    coupon_discount					AS "Coupon Amount",
+    line_item_discount				AS "Line Item Discount",			
+    gratuity                        AS "Gratuity",
+	final_line_item_sub_total       AS "Final Line Item Sub Total",
+    booking_fee						AS "Booking Fee",
+    create_lineitem_processing_fee  AS "Create Line Item Payment Processor Fee",
+    refund_lineitem_processing_fee  AS "Refund Line Item Payment Processor Fee",
+	total_lineitem_processing_fee   AS "Total Line Item Payment Processor Fee",
+	tax_percentage					AS "Tax%",  
+    sales_tax 						AS "Tax",
+	delivery_fee					AS "Delivery Fee",	
+    total_collected					AS "Total Collected",
+	partner_name					AS "Parner Name",
+	partner_id						AS "PartnerId" 
+	
 FROM reporting_sch.order_report_raw;
 
---SELECT * FROM reporting_sch.order_report_final;
+SELECT * FROM reporting_sch.order_report_final;
 
-/* REFUND REPORT */
+/*/* REFUND REPORT */
 DROP TABLE IF EXISTS report_sch.refund_report_raw;
 
 CREATE TABLE report_sch.refund_report_raw AS
@@ -161,3 +166,4 @@ SELECT
     partner_name                AS "PartnerName",
     partner_id                  AS "PartnerId"
 FROM reporting_sch.refund_report_raw;
+*/
