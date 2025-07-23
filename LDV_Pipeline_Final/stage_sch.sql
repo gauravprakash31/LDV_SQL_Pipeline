@@ -18,8 +18,9 @@ CREATE TABLE stage_sch.order_coupons 		AS		SELECT * FROM stage_orders."OrderCoup
 CREATE TABLE stage_sch.coupons 				AS		SELECT * FROM stage_orders."Coupons";
 
 --  orders dynamic
-CREATE TABLE stage_sch.dynamic_controls_o	AS		SELECT * FROM stage_orders.dynamic_controls_o;
-
+CREATE TABLE stage_sch.dc_o					AS 		SELECT * FROM stage_orders.dc_o;
+CREATE TABLE stage_sch.dc_options_o			AS 		SELECT * FROM stage_orders.dc_options_o;
+CREATE TABLE stage_sch.dc_values_o			AS 		SELECT * FROM stage_orders.dc_values_o;
 
 -- products
 CREATE TABLE stage_sch.products 			AS		SELECT * FROM stage_products."Products";
@@ -27,40 +28,30 @@ CREATE TABLE stage_sch.products 			AS		SELECT * FROM stage_products."Products";
 CREATE TABLE stage_sch.rental_types 		AS		SELECT * FROM stage_products."RentalTypes";
 
 -- products dynamic
-CREATE TABLE stage_sch.product_dynamic_control_values_p   AS
-SELECT * FROM stage_products.product_dynamic_control_values_p;
+CREATE TABLE stage_sch.dc_values_p  		AS		SELECT * FROM stage_products.dc_values_p;
 
-CREATE TABLE stage_sch.dynamic_controls_p                 AS
-SELECT * FROM stage_products.dynamic_controls_p;
+CREATE TABLE stage_sch.dc_p                 AS		SELECT * FROM stage_products.dc_p;
 
-CREATE TABLE stage_sch.dynamic_control_options_p          AS
-SELECT * FROM stage_products.dynamic_control_options_p;
+CREATE TABLE stage_sch.dc_options_p         AS		SELECT * FROM stage_products.dc_options_p;
 
-CREATE TABLE stage_sch.dynamic_control_product_mappings_p AS
-SELECT * FROM stage_products.dynamic_control_product_mappings_p;
+CREATE TABLE stage_sch.dc_product_mappings_p	AS	SELECT * FROM stage_products.dc_product_mappings_p;
 
-CREATE TABLE stage_sch.dynamic_control_role_mappings_p    AS
-SELECT * FROM stage_products.dynamic_control_role_mappings_p;
+CREATE TABLE stage_sch.dc_role_mappings_p   AS		SELECT * FROM stage_products.dc_role_mappings_p;
 
 
 -- locations
 CREATE TABLE stage_sch.locations 			AS		SELECT * FROM stage_locations."Locations";
 
 -- locations dynamic
-CREATE TABLE stage_sch.location_dynamic_control_values_l   AS
-SELECT * FROM stage_locations.location_dynamic_control_values_l;
+CREATE TABLE stage_sch.dc_values_l   		AS		SELECT * FROM stage_locations.dc_values_l;
 
-CREATE TABLE stage_sch.dynamic_controls_l                  AS
-SELECT * FROM stage_locations.dynamic_controls_l;
+CREATE TABLE stage_sch.dc_l                 AS		SELECT * FROM stage_locations.dc_l;
 
-CREATE TABLE stage_sch.dynamic_control_options_l           AS
-SELECT * FROM stage_locations.dynamic_control_options_l;
+CREATE TABLE stage_sch.dc_options_l         AS		SELECT * FROM stage_locations.dc_options_l;
 
-CREATE TABLE stage_sch.dynamic_control_location_mappings_l AS
-SELECT * FROM stage_locations.dynamic_control_location_mappings_l;
+CREATE TABLE stage_sch.dc_location_mappings_l AS	SELECT * FROM stage_locations.dc_location_mappings_l;
 
-CREATE TABLE stage_sch.dynamic_control_role_mappings_l     AS
-SELECT * FROM stage_locations.dynamic_control_role_mappings_l;
+CREATE TABLE stage_sch.dc_role_mappings_l    AS		SELECT * FROM stage_locations.dc_role_mappings_l;
 
 
 -- payments

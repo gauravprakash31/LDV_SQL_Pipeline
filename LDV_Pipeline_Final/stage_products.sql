@@ -14,9 +14,9 @@ IMPORT FOREIGN SCHEMA public
 	)
 	FROM SERVER productsapi_srv INTO stage_products;
 
-ALTER TABLE stage_products."ProductDynamicControlValues" 	RENAME TO product_dynamic_control_values_p;
-ALTER TABLE stage_products."DynamicControls" 				RENAME TO dynamic_controls_p;
-ALTER TABLE stage_products."DynamicControlOptions" 			RENAME TO dynamic_control_options_p;
-ALTER TABLE stage_products."DynamicControlProductMappings" 	RENAME TO dynamic_control_product_mappings_p;
-ALTER TABLE stage_products."DynamicControlRoleMappings" 	RENAME TO dynamic_control_role_mappings_p;
+ALTER TABLE stage_products."ProductDynamicControlValues" 	RENAME TO dc_values_p;
+ALTER TABLE stage_products."DynamicControls" 				RENAME TO dc_p;
+ALTER TABLE stage_products."DynamicControlOptions" 			RENAME TO dc_options_p;
+ALTER TABLE stage_products."DynamicControlProductMappings" 	RENAME TO dc_product_mappings_p;
+ALTER TABLE stage_products."DynamicControlRoleMappings" 	RENAME TO dc_role_mappings_p;
 

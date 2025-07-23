@@ -113,8 +113,9 @@ LEFT JOIN agg ON agg.order_items_id = pay.order_items_id
 ;
 
 
-/*  === REPORT LAYER - raw calculations for Order Report === */
+/*  === REPORT LAYER === */
 
+/* ORDER REPORT - raw layer */
 DROP SCHEMA IF EXISTS reporting_sch CASCADE;
 CREATE SCHEMA IF NOT EXISTS reporting_sch;
 
@@ -192,3 +193,5 @@ SELECT
 FROM process_sch.orders_with_coupons ocp;
 
 --SELECT COUNT(*) AS raw_rows FROM reporting_sch.order_report_raw;
+
+/* REFUND REPORT - raw layer */
