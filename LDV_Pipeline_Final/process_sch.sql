@@ -77,7 +77,7 @@ LEFT JOIN clean_sch.payment_transactions pt ON pt.order_id = plu.order_id
 LEFT JOIN clean_sch.payment_refund pr ON pr.payment_transaction_id = pt.payment_transaction_id;
 
 
-/* aggregate coupon codes */
+/* aggregate coupon codes */ -- should go with orders
 CREATE TABLE process_sch.orders_with_coupons AS
 WITH agg AS (
     SELECT
