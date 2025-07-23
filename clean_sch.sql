@@ -33,7 +33,7 @@ SELECT
 	"SalesTax"				AS sales_tax,
 	"Total"					AS total_items,
 	"TotalAmount"			AS total_amount_items,
-	"CreatedOn"				AS created_on,
+	"CreatedOn"				AS created_on_items,
 	"ModifiedOn"			AS modified_on,
 	"IsRefunded"			AS is_refunded,
 	"StartDate"				AS start_date,
@@ -103,8 +103,7 @@ CREATE TABLE clean_sch.dc_o AS
 SELECT
 
 	"Id" 			AS dc_id_o,
-	"Name"			AS dc_name_o,
-	"ShowInExport"	AS show_in_export_o
+	"Name"			AS dc_name_o
 	
 FROM stage_sch.dc_o;
 
@@ -129,20 +128,6 @@ SELECT
 	
 FROM stage_sch.dc_values_o;
 
---DC_items
-
-DROP TABLE IF EXISTS clean_sch.dc_items_o;
-CREATE TABLE clean_sch.dc_items_o AS
-SELECT
-
-"Id"							AS  dc_item_id_o,
-"OrderItemId"					AS  dc_order_item_id,
-"DynamicControlId"				AS	dc_id_o,
-"DynamicControlOptionId"		AS	dc_option_id_o,
-"DynamicControlType"			AS	dc_type
-
-	
-FROM stage_sch.dc_items_o;
 
 --/* PRODUCTS_DB */
 --products
@@ -168,8 +153,7 @@ DROP TABLE IF EXISTS clean_sch.rental_types;
 CREATE TABLE clean_sch.dc_p  AS
 SELECT
     "Id"    AS dc_id_p,
-    "Name"  AS dc_name_p,
-	"ShowInExport"	AS show_in_export_p
+    "Name"  AS dc_name_p
 	
 FROM stage_sch.dc_p;
 
@@ -208,8 +192,7 @@ FROM stage_sch.locations;
 CREATE TABLE clean_sch.dc_l  AS
 SELECT
     "Id"    AS dc_id_l,
-    "Name"  AS dc_name_l,
-	"ShowInExport"	AS show_in_export_l
+    "Name"  AS dc_name_l
 	
 FROM stage_sch.dc_l;
 
@@ -251,7 +234,8 @@ SELECT
 	"Source"				AS payment_source, 
 	"Amount"				AS amount,
 	"PaymentType"			AS payment_type,
-	"PaymentProviderName"	AS payment_provider_name
+	"PaymentProviderName"	AS payment_provider_name,
+	"Source"				AS source
 FROM stage_sch.payment_transactions;
 
 --partners
