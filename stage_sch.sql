@@ -24,7 +24,7 @@ OPTIONS(host 'localhost', port '5432', dbname 'orders_db');
 DROP USER MAPPING IF EXISTS FOR CURRENT_USER SERVER ordersapi_srv;
 CREATE USER MAPPING FOR CURRENT_USER
 SERVER ordersapi_srv
-OPTIONS(user 'postgres', password 'Sharvari04');
+OPTIONS(user 'postgres_fdw', password 'postgres_fdw1');
 
 IMPORT FOREIGN SCHEMA public
 	LIMIT TO (
@@ -72,6 +72,9 @@ SELECT * FROM orders_sch."DynamicControlOptions";
 CREATE TABLE stage_sch.dc_values_o AS
 SELECT * FROM orders_sch."OrderDynamicControlValues";
 
+CREATE TABLE stage_sch.dc_items_o AS
+SELECT * FROM orders_sch."OrderItemDynamicControls";
+
 
 --ProductsAPI
 CREATE SCHEMA IF NOT EXISTS products_sch;
@@ -83,7 +86,7 @@ OPTIONS(host 'localhost', port '5432', dbname 'products_db');
 
 CREATE USER MAPPING FOR CURRENT_USER
 SERVER productsapi_srv
-OPTIONS(user 'postgres', password 'Sharvari04');
+OPTIONS(user 'postgres_fdw', password 'postgres_fdw1');
 
 IMPORT FOREIGN SCHEMA public
 
@@ -130,7 +133,7 @@ OPTIONS(host 'localhost', port '5432', dbname 'locations_db');
 
 CREATE USER MAPPING FOR CURRENT_USER
 SERVER locationsapi_srv
-OPTIONS(user 'postgres', password 'Sharvari04');
+OPTIONS(user 'postgres_fdw', password 'postgres_fdw1');
 
 IMPORT FOREIGN SCHEMA public
 	LIMIT TO (
@@ -173,7 +176,7 @@ OPTIONS(host 'localhost', port '5432', dbname 'payments_db');
 
 CREATE USER MAPPING FOR CURRENT_USER
 SERVER paymentsapi_srv
-OPTIONS(user 'postgres', password 'Sharvari04');
+OPTIONS(user 'postgres_fdw', password 'postgres_fdw1');
 
 IMPORT FOREIGN SCHEMA public
 	LIMIT TO (
@@ -202,7 +205,7 @@ OPTIONS(host 'localhost', port '5432', dbname 'users_db');
 
 CREATE USER MAPPING FOR CURRENT_USER
 SERVER usersapi_srv
-OPTIONS(user 'postgres', password 'Sharvari04');
+OPTIONS(user 'postgres_fdw', password 'postgres_fdw1');
 
 IMPORT FOREIGN SCHEMA public
 	LIMIT TO (
@@ -212,3 +215,4 @@ IMPORT FOREIGN SCHEMA public
 
 CREATE TABLE stage_sch.users AS
 SELECT * FROM users_sch."Users";
+
