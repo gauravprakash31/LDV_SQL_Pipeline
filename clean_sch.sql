@@ -11,7 +11,7 @@ SELECT
 	"ReservationId" 		AS reservation_id,
 	"PaymentTransactionId" 	AS payment_transaction_id,
 	"CreatedBy"				AS created_by,
-	"BookingFee" 			AS booking_fee,
+	"BookingFee" 			AS order_booking_fee,
 	"Total" 				AS total,
 	"OrderNumber" 			AS order_number
 FROM stage_sch.orders;
@@ -34,7 +34,7 @@ SELECT
 	"Total"					AS total_items,
 	"TotalAmount"			AS total_amount_items,
 	"CreatedOn"				AS created_on_items,
-	"ModifiedOn"			AS modified_on,
+	"ModifiedOn"			AS modified_on_items,
 	"IsRefunded"			AS is_refunded,
 	"StartDate"				AS start_date,
 	"EndDate"				AS end_date,
@@ -103,7 +103,8 @@ CREATE TABLE clean_sch.dc_o AS
 SELECT
 
 	"Id" 			AS dc_id_o,
-	"Name"			AS dc_name_o
+	"Name"			AS dc_name_o,
+	"ShowInExport"	AS show_in_export_o
 	
 FROM stage_sch.dc_o;
 
@@ -128,6 +129,20 @@ SELECT
 	
 FROM stage_sch.dc_values_o;
 
+--DC_items
+
+DROP TABLE IF EXISTS clean_sch.dc_items_o;
+CREATE TABLE clean_sch.dc_items_o AS
+SELECT
+
+"Id"							AS  dc_item_id_o,
+"OrderItemId"					AS  dc_order_item_id,
+"DynamicControlId"				AS	dc_id_o,
+"DynamicControlOptionId"		AS	dc_option_id_o,
+"DynamicControlType"			AS	dc_type
+
+	
+FROM stage_sch.dc_items_o;
 
 --/* PRODUCTS_DB */
 --products
@@ -153,7 +168,8 @@ DROP TABLE IF EXISTS clean_sch.rental_types;
 CREATE TABLE clean_sch.dc_p  AS
 SELECT
     "Id"    AS dc_id_p,
-    "Name"  AS dc_name_p
+    "Name"  AS dc_name_p,
+	"ShowInExport"	AS show_in_export_p
 	
 FROM stage_sch.dc_p;
 
@@ -192,7 +208,8 @@ FROM stage_sch.locations;
 CREATE TABLE clean_sch.dc_l  AS
 SELECT
     "Id"    AS dc_id_l,
-    "Name"  AS dc_name_l
+    "Name"  AS dc_name_l,
+	"ShowInExport"	AS show_in_export_l
 	
 FROM stage_sch.dc_l;
 
@@ -234,8 +251,8 @@ SELECT
 	"Source"				AS payment_source, 
 	"Amount"				AS amount,
 	"PaymentType"			AS payment_type,
-	"PaymentProviderName"	AS payment_provider_name,
-	"Source"				AS source
+	"PaymentProviderName"	AS payment_provider_name
+	
 FROM stage_sch.payment_transactions;
 
 --partners
@@ -244,14 +261,17 @@ CREATE TABLE clean_sch.partners AS
 SELECT
 	"Id" 					AS partner_id,
 	"Name"					AS partner_name
+	
 FROM stage_sch.partners;
 	
 --payment_refund-- in stage_sch (connected to refund and payment transaction id)
+
 DROP TABLE IF EXISTS clean_sch.payment_refund;
 CREATE TABLE clean_sch.payment_refund AS
 SELECT
 	"Id" 					AS payment_refund_id,
 	"PaymentTransactionId" 	AS payment_transaction_id,
 	"RefundedProcessingFee"	AS refunded_processing_fee
+	
 FROM stage_sch.payment_refund;
 
