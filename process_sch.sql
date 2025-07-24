@@ -234,6 +234,7 @@ SELECT
     p.delivery_fee,
     p.processing_fee,
     p.sales_tax,
+	p.tax_percentage  AS tax_p,
 
     /* === total collected (same formula as order report) === */
     pt.amount
