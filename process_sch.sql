@@ -2,7 +2,7 @@ DROP SCHEMA IF EXISTS process_sch CASCADE;
 CREATE SCHEMA IF NOT EXISTS process_sch;
 
 /* ORDERS */
--- STEP 1: Orders + Items + Reservations + Order History
+-- STEP 1: Orders + Items + Reservations + Order History + Order Item History (for Booking Fee)
 DROP TABLE IF EXISTS process_sch.orders_with_items;
 CREATE TABLE process_sch.orders_with_items AS
 SELECT
@@ -32,11 +32,13 @@ SELECT
     oi.start_date,
     oi.end_date,
     oi.partner_id,
-    oh.refunded_total     AS order_level_refund
+    oh.refunded_total     AS order_level_refund,
+    oih.booking_fee       AS line_item_booking_fee
 FROM clean_sch.orders o
 LEFT JOIN clean_sch.reservations r       ON r.reservation_id = o.reservation_id
 LEFT JOIN clean_sch.order_items oi       ON oi.order_id = o.order_id
-LEFT JOIN clean_sch.order_history oh     ON oh.order_id = o.order_id;
+LEFT JOIN clean_sch.order_history oh     ON oh.order_id = o.order_id
+LEFT JOIN clean_sch.order_item_history oih ON oih.order_item_id = oi.order_item_id;
 
 
 -- STEP 2: Add Product, Location, Site, User, Partner
@@ -68,7 +70,6 @@ SELECT
     pr.refunded_processing_fee,
     pt.payment_source,
     pt.payment_type,
-	
     COALESCE(pt.payment_provider_name, 'Unknown') AS payment_provider_name
 FROM process_sch.orders_with_p_l_u plu
 LEFT JOIN clean_sch.payment_transactions pt   ON pt.order_id = plu.order_id
@@ -92,89 +93,73 @@ SELECT
 FROM process_sch.orders_with_payments pay
 LEFT JOIN agg ON agg.order_item_id = pay.order_item_id;
 
-SELECT * 
-FROM process_sch.orders_with_coupons
-WHERE Order_id = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404'
-ORDER BY order_item_id;
-
 -- STEP 5: Raw Reporting Table
-
 DROP SCHEMA IF EXISTS order_report_sch CASCADE;
 CREATE SCHEMA IF NOT EXISTS order_report_sch;
 
 DROP TABLE IF EXISTS order_report_sch.order_report_raw;
 CREATE TABLE order_report_sch.order_report_raw AS
 SELECT
-    ocp.reservation_code	AS rid,
-    ocp.order_id		AS order_id_original,
-    ocp.order_number 	AS order_id,
-    ocp.order_item_id	AS line_item_id,
-    ocp.created_on_items                        AS order_date,
-    ocp.original_amount                         AS original_order_amount,
-    ocp.order_level_refund                      AS order_refunded_amount,
-    ocp.total                                   AS order_amount,
-    ocp.payment_source AS order_type,
-    ocp.payment_type   AS payment_method, 
-    ocp.payment_provider_name AS payment_processor,
-    ocp.is_refunded  	AS Refunded,
+    ocp.reservation_code            AS rid,
+    ocp.order_id                    AS order_id_original,
+    ocp.order_number                AS order_id,
+    ocp.order_item_id               AS line_item_id,
+    ocp.created_on_items            AS order_date,
+    ocp.original_amount             AS original_order_amount,
+    ocp.order_level_refund          AS order_refunded_amount,
+    ocp.total                       AS order_amount,
+    ocp.payment_source              AS order_type,
+    ocp.payment_type                AS payment_method,
+    ocp.payment_provider_name       AS payment_processor,
+    ocp.is_refunded                 AS Refunded,
     ocp.user_name,
     ocp.product_name,
-    ocp.start_date          AS rental_start_date,
-    ocp.end_date            AS rental_end_date ,
+    ocp.start_date                  AS rental_start_date,
+    ocp.end_date                    AS rental_end_date,
     ocp.location_name,
-    ocp.site_name            AS subsite_location,
-    ocp.total_items          AS line_item_sub_total,
-    ocp.coupon_code                             AS promo_code_id,
-    ocp.coupon_discount      AS coupon_amount,
-    ocp.discount                                AS line_item_discount,
-    ocp.tip                                     AS gratuity,
-
+    ocp.site_name                   AS subsite_location,
+    ocp.total_items                 AS line_item_sub_total,
+    ocp.coupon_code                 AS promo_code_id,
+    ocp.coupon_discount             AS coupon_amount,
+    ocp.discount                    AS line_item_discount,
+    ocp.tip                         AS gratuity,
     GREATEST(
-	    COALESCE(total_items, 0) 
-	    - COALESCE(coupon_discount, 0) 
-	    - COALESCE(discount, 0), 0
-	  ) AS final_line_item_sub_total,
-
-	  (order_booking_fee * total_amount_items / NULLIF(total, 0)) AS booking_fee,
-
-
-    
-    (COALESCE(processing_fee, 0) * total_amount_items / NULLIF(total, 0))
-    AS create_lineitem_processing_fee,
-	
-    (COALESCE(refunded_processing_fee, 0) * total_amount_items / NULLIF(total, 0))
-    AS refund_lineitem_processing_fee,
-		
-	((COALESCE(processing_fee, 0) * total_amount_items / NULLIF(total, 0)) - (COALESCE(refunded_processing_fee, 0) * total_amount_items / NULLIF(total, 0)))
-    AS total_line_item_processing_fee,
-
-    ocp.tax_percentage  AS tax_p,
-    ocp.sales_tax    AS tax,
+        COALESCE(total_items, 0)
+        - COALESCE(coupon_discount, 0)
+        - COALESCE(discount, 0),
+        0
+    )                               AS final_line_item_sub_total,
+    ocp.line_item_booking_fee       AS booking_fee,
+    (COALESCE(processing_fee, 0) * total_amount_items / NULLIF(total, 0)) AS create_lineitem_processing_fee,
+    (COALESCE(refunded_processing_fee, 0) * total_amount_items / NULLIF(total, 0)) AS refund_lineitem_processing_fee,
+    ((COALESCE(processing_fee, 0) * total_amount_items / NULLIF(total, 0)) - (COALESCE(refunded_processing_fee, 0) * total_amount_items / NULLIF(total, 0))) AS total_line_item_processing_fee,
+    ocp.tax_percentage              AS tax_p,
+    ocp.sales_tax                   AS tax,
     ocp.delivery_fee,
-
-	((COALESCE(GREATEST(
-	    COALESCE(total_items, 0) 
-	    - COALESCE(coupon_discount, 0) 
-	    - COALESCE(discount, 0), 0
-	  ), 0) 
-    + COALESCE(tip, 0) 
-    + COALESCE((order_booking_fee * total_amount_items / NULLIF(total, 0)), 0))
-    - COALESCE(tip, 0))
-    AS total_collected,
-    
+  	(
+        GREATEST(
+            COALESCE(total_items, 0)
+            - COALESCE(coupon_discount, 0)
+            - COALESCE(discount, 0),
+            0
+        )
+        + COALESCE(ocp.line_item_booking_fee, 0)
+        + COALESCE(ocp.tip, 0)
+        + COALESCE(ocp.sales_tax, 0)
+        + COALESCE(ocp.delivery_fee, 0)
+        - (COALESCE(ocp.processing_fee, 0) * ocp.total_amount_items / NULLIF(ocp.total, 0))
+    )                               AS total_collected,
     ocp.partner_name,
     ocp.partner_id,
-    
     ocp.order_booking_fee,
-	ocp.processing_fee,
+    ocp.processing_fee,
     ocp.refunded_processing_fee,
     ocp.total_amount_items,
     ocp.coupon_discount
-
-
 FROM process_sch.orders_with_coupons ocp;
 
-/* REFUND */
+
+/*/* REFUND */
 CREATE SCHEMA IF NOT EXISTS refund_report_sch;
 DROP TABLE IF EXISTS refund_report_sch.refund_report_raw;
 
@@ -190,6 +175,7 @@ SELECT
     /* === original order info === */
     p.created_on_items                              AS original_order_date,
     ih.created_on                                   AS transaction_date,        -- from OrderItemsHistory
+	ih.booking_fee									AS booking_fee,
     p.total_amount_items                            AS original_line_item_amount,
 
     /* === refund meta === */
@@ -266,4 +252,4 @@ LEFT JOIN clean_sch.rental_types  rt
        ON pt.order_id      = p.order_id
 	LEFT JOIN clean_sch.payment_refund             pr
        ON pr.payment_transaction_id = pt.payment_transaction_id
-;
+;*/

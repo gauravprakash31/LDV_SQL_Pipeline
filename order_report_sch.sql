@@ -27,18 +27,19 @@ SELECT
     line_item_discount				AS "Line Item Discount",			
     gratuity                        AS "Gratuity",
 	final_line_item_sub_total       AS "Final Line Item Sub Total",
-    booking_fee						AS "Booking Fee", -- fix
-    create_lineitem_processing_fee  AS "Create Line Item Payment Processor Fee", -- fix
-    refund_lineitem_processing_fee  AS "Refund Line Item Payment Processor Fee", -- fix
-	total_line_item_processing_fee   AS "Total Line Item Payment Processor Fee", -- fix
+    booking_fee						AS "Booking Fee",
+    create_lineitem_processing_fee  AS "Create Line Item Payment Processor Fee",
+    refund_lineitem_processing_fee  AS "Refund Line Item Payment Processor Fee", 
+	total_line_item_processing_fee   AS "Total Line Item Payment Processor Fee", 
 	tax_p							AS "Tax%",  
     tax		 						AS "Tax", 
 	delivery_fee					AS "Delivery Fee",	
-    total_collected					AS "Total Collected", -- fix
+    total_collected					AS "Total Collected",
 	partner_name					AS "Parner Name",
 	partner_id						AS "PartnerId" 
 	
 FROM order_report_sch.order_report_raw; --WHERE order_id = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404';
 
-SELECT * FROM order_report_sch.order_report_final WHERE "RID" = 'LDV0014980'
+SELECT * FROM order_report_sch.order_report_final 
+WHERE "RID" = 'LDV0014980'
 ORDER BY "Line Item Id" ASC; --WHERE "Order Id" = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404';
