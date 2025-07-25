@@ -22,21 +22,22 @@ SELECT
     location_name               AS "Location",
     site_name                   AS "Subsite Location",
 	-- tax counties
-	line_item_sub_total         AS "Line Item Sub Total",
+	line_item_sub_total         AS "Line Item Sub Total", 
     promo_code_id               AS "Promo Code Id",
     coupon_discount             AS "Coupon Amount",
     line_item_discount          AS "Line Item Discount",
     gratuity                    AS "Gratuity",
     final_line_item_sub_total   AS "Final Line Item Sub Total",
     booking_fee                 AS "Booking Fee",
-    processing_fee              AS "Processing Fees",
+    processing_fee              AS "Processing Fees", -- fix
 	tax_p						AS "Tax%",  
     sales_tax                   AS "Tax",
     delivery_fee                AS "Delivery Fee",
-    total_collected             AS "Total Collected", 
+    total_collected             AS "Total Collected", -- fix
     partner_name                AS "Partner Name",
     partner_id                  AS "PartnerId"
 FROM refund_report_sch.refund_report_raw;
 
-SELECT * FROM refund_report_sch.refund_report_final WHERE "RID" = 'LDV0014980'
+SELECT * FROM refund_report_sch.refund_report_final 
+WHERE "RID" = 'LDV0014980'
 ORDER BY "Line Item Id" ASC;

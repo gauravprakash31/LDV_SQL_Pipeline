@@ -159,97 +159,67 @@ SELECT
 FROM process_sch.orders_with_coupons ocp;
 
 
-/*/* REFUND */
+/* REFUND */
 CREATE SCHEMA IF NOT EXISTS refund_report_sch;
 DROP TABLE IF EXISTS refund_report_sch.refund_report_raw;
 
 CREATE TABLE refund_report_sch.refund_report_raw AS
 SELECT
-    /* === keys === */
     p.order_id,
     p.order_item_id,
     p.order_number,
-    p.reservation_code                              AS rid,
-	rt.rental_name,  --ERROR:  column p.rental_name does not exist
-
-    /* === original order info === */
-    p.created_on_items                              AS original_order_date,
-    ih.created_on                                   AS transaction_date,        -- from OrderItemsHistory
-	ih.booking_fee									AS booking_fee,
-    p.total_amount_items                            AS original_line_item_amount,
-
-    /* === refund meta === */
-    CASE
-        WHEN ih.order_item_history_id IS NOT NULL THEN 'Refund'
-        ELSE 'Payment'
-    END                                          AS transaction_type,
-
-    oh.refunded_total                               AS refund_amount,            -- order-level
-    oh.refund_order_number                          AS refund_order_id,
-
-    /* === payment info === */
-    pt.payment_source                                       AS order_type,
+    p.reservation_code           AS rid,
+    rt.rental_name,
+    p.created_on_items           AS original_order_date,
+    ih.created_on                AS transaction_date,
+    p.line_item_booking_fee      AS booking_fee,
+    p.total_amount_items         AS original_line_item_amount,
+    CASE WHEN ih.order_item_history_id IS NOT NULL THEN 'Refund' ELSE 'Payment' END AS transaction_type,
+    oh.refunded_total            AS refund_amount,
+    oh.refund_order_number       AS refund_order_id,
+    pt.payment_source            AS order_type,
     pt.payment_type,
     pt.payment_provider_name,
-
-    /* === user & product === */
     p.user_name,
     p.product_name,
     p.start_date,
     p.end_date,
-
-    /* === location === */
     p.location_name,
     p.site_name,
     p.tax_percentage,
-
-    /* === discounts / promo === */
-    p.total_amount_items                            AS line_item_sub_total,
-    p.coupon_code                                   AS promo_code_id,
+    p.total_items                AS line_item_sub_total,
+    p.coupon_code                AS promo_code_id,
     p.coupon_discount,
-    p.discount                                      AS line_item_discount,
-    p.tip                                           AS gratuity,
-
-    /* === line-level calc === */
-    p.total_amount_items
-      - p.coupon_discount
-      - p.discount                                  AS final_line_item_sub_total,
-
-    /* === fees & tax === */
-    (order_booking_fee * total_amount_items / NULLIF(total, 0)) AS booking_fee,
+    p.discount                   AS line_item_discount,
+    p.tip                        AS gratuity,
+    GREATEST(
+        COALESCE(p.total_items, 0)
+        - COALESCE(p.coupon_discount, 0)
+        - COALESCE(p.discount, 0),
+        0
+    )                             AS final_line_item_sub_total,
     p.delivery_fee,
-    p.processing_fee,
+    (COALESCE(p.processing_fee, 0) * p.total_amount_items / NULLIF(p.total, 0)) AS processing_fee,
     p.sales_tax,
-	p.tax_percentage  AS tax_p,
-
-    /* === total collected (same formula as order report) === */
-    pt.amount
-      - oh.refunded_total
-      - COALESCE(pr.refunded_processing_fee,0)      AS total_collected, --ERROR:  column p.paid_amount does not exist
-
-
-    /* === partner === */
-    p.partner_name,
-    p.partner_id
-
-FROM process_sch.orders_with_coupons           p
-/* line-item-level history */
-LEFT JOIN clean_sch.order_item_history ih
-       ON ih.order_item_id = p.order_item_id
-
-LEFT JOIN clean_sch.order_history oh
-       ON oh.order_id = p.order_id            
-
-LEFT JOIN clean_sch.users u
-       ON u.users_id = COALESCE(oh.user_id, p.created_by)  
-
-LEFT JOIN clean_sch.rental_types  rt
-       ON rt.rental_types_id = p.rental_type_id
-
-
-/* payment transaction & refund fee */
-	LEFT JOIN clean_sch.payment_transactions       pt
-       ON pt.order_id      = p.order_id
-	LEFT JOIN clean_sch.payment_refund             pr
-       ON pr.payment_transaction_id = pt.payment_transaction_id
-;*/
+    p.tax_percentage             AS tax_p,
+    (
+        GREATEST(
+            COALESCE(p.total_items, 0)
+            - COALESCE(p.coupon_discount, 0)
+            - COALESCE(p.discount, 0),
+            0
+        )
+        + COALESCE(p.line_item_booking_fee, 0)
+        + COALESCE(p.tip, 0)
+        + COALESCE(p.sales_tax, 0)
+        + COALESCE(p.delivery_fee, 0)
+        - (COALESCE(p.processing_fee, 0) * p.total_amount_items / NULLIF(p.total, 0))
+    )                             AS total_collected,
+    CASE WHEN pt.payment_source = 'Consumer Web' THEN NULL ELSE p.partner_name END AS partner_name,
+    CASE WHEN pt.payment_source = 'Consumer Web' THEN NULL ELSE p.partner_id END   AS partner_id
+FROM process_sch.orders_with_coupons p
+LEFT JOIN clean_sch.order_item_history ih  ON ih.order_item_id = p.order_item_id
+LEFT JOIN clean_sch.order_history oh        ON oh.order_id       = p.order_id
+LEFT JOIN clean_sch.users u                 ON u.users_id        = COALESCE(oh.user_id, p.created_by)
+LEFT JOIN clean_sch.rental_types rt         ON rt.rental_types_id = p.rental_type_id
+LEFT JOIN clean_sch.payment_transactions pt ON pt.order_id       = p.order_id
