@@ -20,10 +20,12 @@ FROM stage_sch.orders;
 DROP TABLE IF EXISTS clean_sch.order_items;
 CREATE TABLE clean_sch.order_items AS
 SELECT
+
 	"Id"					AS order_item_id,
 	"OrderId"				AS order_id,
 	"ProductId"				AS product_id,
 	"LocationId"			AS location_id,
+	"BookingFee"			AS booking_fee_item,
 	"SiteId"				AS site_id,
 	"RentalTypeId"			AS rental_type_id,
 	"CouponDiscount"		AS coupon_discount,
