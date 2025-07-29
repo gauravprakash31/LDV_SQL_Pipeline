@@ -1,3 +1,5 @@
+--STAGE--
+
 --DROP EXTENSION IF EXISTS postgres_fdw CASCADE;
 --DROP SERVER IF EXISTS ordersapi_srv CASCADE;
 --DROP SERVER IF EXISTS productsapi_srv CASCADE;
@@ -215,4 +217,3 @@ IMPORT FOREIGN SCHEMA public
 
 CREATE TABLE stage_sch.users AS
 SELECT * FROM users_sch."Users";
-
