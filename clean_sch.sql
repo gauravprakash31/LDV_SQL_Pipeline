@@ -1,3 +1,5 @@
+--CLEAN--
+
 /*ORDERS_DB*/
 --orders
 
@@ -20,15 +22,14 @@ FROM stage_sch.orders;
 DROP TABLE IF EXISTS clean_sch.order_items;
 CREATE TABLE clean_sch.order_items AS
 SELECT
-
 	"Id"					AS order_item_id,
 	"OrderId"				AS order_id,
 	"ProductId"				AS product_id,
 	"LocationId"			AS location_id,
-	"BookingFee"			AS booking_fee_item,
 	"SiteId"				AS site_id,
 	"RentalTypeId"			AS rental_type_id,
 	"CouponDiscount"		AS coupon_discount,
+	"BookingFee"			AS booking_fee_item,
 	"DeliveryFee"			AS delivery_fee,
 	"Tip"					AS tip,
 	"Discount"				AS discount,
@@ -60,7 +61,10 @@ DROP TABLE IF EXISTS clean_sch.order_items_history;
 CREATE TABLE clean_sch.order_items_history AS
 SELECT
 	"Id"					AS order_item_history_id,
+	"OrderItemId"			AS order_item_id,
 	"OrderId"				AS order_id,
+	"RefundedQuantity"		AS refunded_quantity,
+	"RefundedTotalAmount"	AS refunded_total_item,
 	"ProductId"				AS product_id,
 	"LocationId"			AS location_id,
 	"SiteId"				AS site_id,
@@ -141,7 +145,7 @@ SELECT
 "OrderItemId"					AS  dc_order_item_id,
 "DynamicControlId"				AS	dc_id_o,
 "DynamicControlOptionId"		AS	dc_option_id_o,
-"DynamicControlType"			AS	dc_type
+"DynamicControlType"			AS	dc_type_o
 
 	
 FROM stage_sch.dc_items_o;
@@ -272,6 +276,7 @@ DROP TABLE IF EXISTS clean_sch.payment_refund;
 CREATE TABLE clean_sch.payment_refund AS
 SELECT
 	"Id" 					AS payment_refund_id,
+	"Amount"				AS total_refund_amount,
 	"PaymentTransactionId" 	AS payment_transaction_id,
 	"RefundedProcessingFee"	AS refunded_processing_fee
 	
