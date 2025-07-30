@@ -39,12 +39,22 @@ SELECT
     ih.refunded_total_item
 	
 FROM clean_sch.orders o
-INNER JOIN clean_sch.reservations r       ON r.reservation_id = o.reservation_id
-INNER JOIN clean_sch.order_items oi       ON oi.order_id = o.order_id
-INNER JOIN clean_sch.order_history oh     ON oh.order_id = o.order_id
-INNER JOIN clean_sch.order_items_history ih ON ih.order_item_id = oi.order_item_id;
+LEFT JOIN clean_sch.reservations r       ON r.reservation_id = o.reservation_id
+LEFT JOIN clean_sch.order_items oi       ON oi.order_id = o.order_id
+LEFT JOIN clean_sch.order_history oh     ON oh.order_id = o.order_id
+LEFT JOIN clean_sch.order_items_history ih ON ih.order_item_id = oi.order_item_id;
 
+SELECT count(DISTINCT order_id) FROM order_report_sch.orders_with_items 
 SELECT * FROM order_report_sch.orders_with_items WHERE order_id = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404' ORDER BY order_item_id;
+
+SELECT * FROM stage_sch.order_history
+WHERE "OrderId" = '977f485c-02c8-4f59-a03d-ad1feb371889'
+LIMIT 10;
+
+SELECT * FROM clean_sch.orders
+WHERE order_number = 100000005009
+LIMIT 10;
+
 
 
 -- step 2: product, location, site, user, partner
@@ -66,7 +76,9 @@ LEFT JOIN clean_sch.locations site     ON site.location_id = base.site_id
 LEFT JOIN clean_sch.users u            ON u.users_id = base.created_by
 LEFT JOIN clean_sch.partners pa        ON pa.partner_id = base.partner_id;
 
+SELECT count(DISTINCT order_id) FROM order_report_sch.orders_with_p_l_u 
 
+SELECT count(DISTINCT order_id) FROM order_report_sch.orders_with_p_l_u 
 SELECT * FROM order_report_sch.orders_with_p_l_u
 WHERE order_id = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404'
 ORDER BY order_item_id;
@@ -83,9 +95,10 @@ SELECT
     pt.payment_type,
     COALESCE(pt.payment_provider_name, 'Unknown') AS payment_provider_name
 FROM order_report_sch.orders_with_p_l_u plu
-INNER JOIN clean_sch.payment_transactions pt   ON pt.order_id = plu.order_id
-INNER JOIN clean_sch.payment_refund pr         ON pr.payment_transaction_id = pt.payment_transaction_id;
+LEFT JOIN clean_sch.payment_transactions pt   ON pt.order_id = plu.order_id
+LEFT JOIN clean_sch.payment_refund pr         ON pr.payment_transaction_id = pt.payment_transaction_id;
 
+SELECT count(DISTINCT order_id) FROM order_report_sch.orders_with_payments 
 
 -- step 4: aggregate coupon codes
 DROP TABLE IF EXISTS order_report_sch.orders_with_coupons;
@@ -102,8 +115,9 @@ SELECT
     pay.*,
     agg.coupon_code
 FROM order_report_sch.orders_with_payments pay
-INNER JOIN agg ON agg.order_item_id = pay.order_item_id;
+LEFT JOIN agg ON agg.order_item_id = pay.order_item_id;
 
+SELECT count(DISTINCT order_id) FROM order_report_sch.orders_with_coupons 
 SELECT * FROM order_report_sch.orders_with_coupons
 WHERE order_id = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404'
 ORDER BY order_item_id;
@@ -162,7 +176,7 @@ SELECT
 	
 FROM order_report_sch.orders_with_coupons ocp;
 
-
+SELECT count(DISTINCT order_id) FROM order_report_sch.orders_with_coupons
 SELECT * FROM order_report_sch.order_report_raw WHERE order_id_original = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404' ORDER BY order_item_id;
 
 /* ORDERS FINAL REPORT */
@@ -209,5 +223,8 @@ SELECT
     partner_id									AS "Partner Id"
 FROM order_report_sch.order_report_raw;
 
-SELECT * FROM order_report_sch.order_report_final WHERE "RID" = 'LDV0014980' ORDER BY "Line Item Id";
+SELECT count(DISTINCT "Order Id") FROM order_report_sch.order_report_final
 
+SELECT DISTINCT * FROM order_report_sch.order_report_final WHERE "RID" = 'LDV0014809' ORDER BY "Line Item Id";
+
+SELECT DISTINCT * FROM order_report_sch.order_report_final --WHERE "RID" = 'LDV0014980' ORDER BY "Line Item Id";
