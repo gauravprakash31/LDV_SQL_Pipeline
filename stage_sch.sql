@@ -1,5 +1,3 @@
---STAGE--
-
 --DROP EXTENSION IF EXISTS postgres_fdw CASCADE;
 --DROP SERVER IF EXISTS ordersapi_srv CASCADE;
 --DROP SERVER IF EXISTS productsapi_srv CASCADE;
@@ -185,6 +183,8 @@ SELECT
   "RentalTypeId",
   "CouponDiscount",
   "BookingFee",
+  "ParentOrderItemId",
+  "IsALaCarte",
   "DeliveryFee",
   "Tip",
   "Discount",
@@ -207,8 +207,18 @@ SELECT
   "OrderItemId",
   "OrderId",
   "RefundedQuantity",
-  "RefundedTotalAmount"
+  "RefundedTotalAmount",
+  "TotalAmount",
+  "CreatedOn",
+  "RefundedCouponDiscount",
+  "RefundedTip",
+  "RefundedDiscount",
+  "RefundedTotal",
+  "PaymentProcessingFee"  
+  
 FROM orders_sch."OrderItemsHistory";
+
+	
 
 -- OrderHistory
 DROP TABLE IF EXISTS public."OrderHistory" CASCADE;
@@ -251,7 +261,7 @@ DROP TABLE IF EXISTS public."OrderDynamicControls" CASCADE;
 CREATE TABLE public."OrderDynamicControls" AS
 SELECT
   "Id",
-  "Name",
+  "DisplayName",
   "ShowInExport"
 FROM orders_sch."DynamicControls";
 
@@ -280,6 +290,7 @@ SELECT
   "DynamicControlType"
 FROM orders_sch."OrderItemDynamicControls";
 
+
 -- PRODUCTS
 
 -- Products & RentalTypes
@@ -302,12 +313,12 @@ DROP TABLE IF EXISTS public."ProductDynamicControls" CASCADE;
 CREATE TABLE public."ProductDynamicControls" AS
 SELECT
   "Id",
-  "Name",
+  "DisplayName",
   "ShowInExport"
 FROM products_sch."DynamicControls";
 
 DROP TABLE IF EXISTS public."ProductDynamicControlOptions" CASCADE;
-CREATE TABLE public."DynamicControlOptions" AS
+CREATE TABLE public."ProductDynamicControlOptions" AS
 SELECT
   "Id",
   "DynamicControlId",
@@ -337,7 +348,7 @@ DROP TABLE IF EXISTS public."LocationDynamicControls" CASCADE;
 CREATE TABLE public."LocationDynamicControls" AS
 SELECT
   "Id",
-  "Name",
+  "DisplayName",
   "ShowInExport"
 FROM locations_sch."DynamicControls";
 
@@ -386,6 +397,7 @@ SELECT
   "Amount",
   "PaymentType",
   "Status",
+  "CreatedOn",
   "PaymentProviderName"
 FROM payments_sch."PaymentTransactions";
 
