@@ -1,7 +1,7 @@
 --===============================================================
 -- Order_report_sch.sql
 -- Build static order_report_final with NULLs → blanks
---===============================================================
+--==============================================================
 
 CREATE EXTENSION IF NOT EXISTS tablefunc;
 
@@ -11,19 +11,49 @@ CREATE SCHEMA order_report_sch;
 ---------------------------------------------------------------------------------------------------
 -- STEP 1.1: orders_with_items (include refunded‐item history)
 ---------------------------------------------------------------------------------------------------
-DROP TABLE IF EXISTS order_report_sch.orders_with_items;
-CREATE TABLE order_report_sch.orders_with_items AS
+---Processing Order_item_history table
 
-WITH ih_agg AS (
+DROP TABLE IF EXISTS order_report_sch.orders_item_history_agg;
+CREATE TABLE order_report_sch.orders_item_history_agg AS
+WITH earliest_amounts AS (
   SELECT
-    "OrderItemId"          AS order_item_id,
+  	"OrderId",
+    "OrderItemId",
+    "TotalAmount",
+    ROW_NUMBER() OVER ( PARTITION BY "OrderItemId" ORDER BY "CreatedOn" ASC) AS rn
+  FROM public."OrderItemsHistory"
+  WHERE "RefundedTotalAmount" > 0
+),
+refunded_totals AS (
+  SELECT
+    "OrderItemId",
     SUM("RefundedTotalAmount") AS refunded_total_item
+	
   FROM public."OrderItemsHistory"
   WHERE "RefundedTotalAmount" > 0
   GROUP BY "OrderItemId"
 )
+SELECT DISTINCT
+  ih."OrderId",
+  ih."OrderItemId" AS order_item_id,
+  COALESCE(rt.refunded_total_item,0.00) AS refunded_total_item,
+  ea."TotalAmount" AS earliest_total_amount
+
+  
+FROM public."OrderItemsHistory" AS ih
+INNER JOIN earliest_amounts ea ON  ea."OrderItemId" = ih."OrderItemId"
+INNER JOIN refunded_totals rt ON rt."OrderItemId" = ea."OrderItemId"
+WHERE ea.rn = 1;
+
+--CHECK
+
+SELECT * FROM order_report_sch.orders_item_history_agg WHERE "OrderId" = '977f485c-02c8-4f59-a03d-ad1feb371889' ORDER BY order_item_id;
+
+DROP TABLE IF EXISTS order_report_sch.orders_with_items;
+CREATE TABLE order_report_sch.orders_with_items AS
 SELECT
-  o."Id"               AS order_id,
+  o."Id"                    AS order_id,
+  oi."Id"          			AS order_item_id,
   o."ReservationId"         AS reservation_id,
   o."PaymentTransactionId"  AS payment_transaction_id,
   o."CreatedBy"             AS created_by,
@@ -32,7 +62,6 @@ SELECT
   o."Total"                 AS total,
   o."OrderNumber"           AS order_number,
   r."ReservationCode"       AS reservation_code,
-  oi."Id"                   AS order_item_id,
   oi."ProductId"            AS product_id,
   oi."LocationId"           AS location_id,
   oi."ModifiedOn"           AS modified_on_items,
@@ -42,30 +71,42 @@ SELECT
   oi."Tip"                  AS tip,
   oi."Discount"             AS discount,
   oi."SalesTax"             AS sales_tax,
-  oi."TotalAmount"          AS total_amount_items,
-  oi."TotalAmount" + COALESCE(ih_agg.refunded_total_item,0)
-                             AS actual_amount_items,
   oi."Total"                AS total_items,
   oi."CreatedOn"            AS created_on_items,
   CASE
-    WHEN COALESCE(ih_agg.refunded_total_item,0)>0 THEN TRUE
+    WHEN COALESCE(ih_agg.refunded_total_item,0.00) >0 THEN TRUE
     ELSE oi."IsRefunded"
   END                       AS is_refunded,
   oi."StartDate"            AS start_date,
   oi."EndDate"              AS end_date,
   oi."PartnerId"            AS partner_id,
   oi."BookingFee"           AS line_item_booking_fee,
-  COALESCE(ih_agg.refunded_total_item,0) AS refunded_total_item
+  oi."ParentOrderItemId",
+  oi."IsALaCarte",
+  oi."TotalAmount"          AS total_amount_items,
+  COALESCE(ih_agg.refunded_total_item,0.00)   AS refunded_total_item,
+  COALESCE(ih_agg.earliest_total_amount,0.00)   AS earliest_total_amount,
+
+    CASE
+    WHEN COALESCE(ih_agg.refunded_total_item,0.00) >0 THEN ih_agg.earliest_total_amount
+    ELSE oi."TotalAmount"
+  END  AS actual_amount_items
+  
 FROM public."Orders"       o
 LEFT JOIN public."Reservations"        r  ON r."Id"              = o."ReservationId"
-LEFT JOIN public."OrderItems"         oi  ON oi."OrderId"         = o."Id"
-LEFT JOIN ih_agg                      ON ih_agg.order_item_id = oi."Id";
+LEFT JOIN public."OrderItems"         oi  ON oi."OrderId"         = o."Id" 
+LEFT JOIN order_report_sch.orders_item_history_agg AS ih_agg ON ih_agg.order_item_id = oi."Id"
+WHERE NOT (oi."ParentOrderItemId" IS NULL AND oi."IsALaCarte" = true);
+
+
 
 -- CHECKS
+SELECT * FROM order_report_sch.orders_with_items WHERE order_number = 100000005009 ORDER BY order_item_id;
 SELECT * FROM public."OrderItems" WHERE "OrderId" = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404';
 SELECT count(DISTINCT order_id) FROM order_report_sch.orders_with_items;
 SELECT * FROM order_report_sch.orders_with_items WHERE order_number = 100000005009;
 
+SELECT * FROM public."OrderItems"   WHERE  "Id"  = 'b18f25b5-8985-4ec2-b4fb-17275107b82b';
 
 ---------------------------------------------------------------------------------------------------
 -- STEP 1.2: orders_with_p_l_u (enrich with product, location, site, user, partner, tax%)
@@ -225,6 +266,8 @@ END AS refund_line_item_processing_fee,
   ROUND(ocp.sales_tax::numeric, 2)            AS sales_tax,
   ROUND(ocp.delivery_fee::numeric, 2)         AS delivery_fee,
 
+  
+
   COALESCE(ocp.partner_name, '')              AS partner_name,
   ocp.partner_id,
 
@@ -239,8 +282,8 @@ FROM order_report_sch.orders_with_coupons ocp;
 
 -- CHECK
 SELECT * FROM order_report_sch.order_report_raw WHERE reservation_code = 'LDV0014809' ORDER BY order_item_id;
-
-
+SELECT * FROM order_report_sch.order_report_raw WHERE reservation_code = 'LDV0014980' ORDER BY order_item_id;
+SELECT * FROM order_report_sch.order_report_raw WHERE reservation_code = 'LDV0014977' ORDER BY order_item_id;
 ---------------------------------------------------------------------------------------------------
 -- STEP 1.6: order_report_final (round & label, all text blanks)
 ---------------------------------------------------------------------------------------------------
@@ -264,6 +307,7 @@ SELECT
   COALESCE(end_date,'')                                AS "Rental End Date",
   COALESCE(location_name,'')                           AS "Location",
   COALESCE(site_name,'')                               AS "Subsite Location",
+  ''												   AS "Tax Counties",
   COALESCE(total_items::text,'')                       AS "Line Item Sub Total",
   COALESCE(coupon_code,'')                             AS "Promo Code Id",
   COALESCE(ROUND(coupon_discount::numeric,2)::text,'') AS "Coupon Amount",
@@ -289,8 +333,8 @@ SELECT
     	+ ROUND(final_line_item_sub_total::numeric, 2)
     	+ ROUND(line_item_booking_fee::numeric, 2)
     	+ ROUND(sales_tax::numeric, 2)
-    	- ROUND(create_line_item_processing_fee::numeric, 2)
-    	- ROUND(refund_line_item_processing_fee::numeric, 2),
+		+ ROUND(delivery_fee::numeric, 2)
+    	- (ROUND(create_line_item_processing_fee::numeric, 2) - ROUND(refund_line_item_processing_fee::numeric, 2)),
   	2),
  	 0.00
 			) AS "Total Collected",
@@ -351,5 +395,20 @@ SELECT count(DISTINCT "Order Id") FROM order_report_sch.order_report_g;
 SELECT count(*) FROM order_report_sch.order_report_g;
 SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014809' ORDER BY "Line Item Id";
 SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014980' ORDER BY "Line Item Id";
-SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014777' ORDER BY "Line Item Id";
-SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014977' ORDER BY "Line Item Id";
+SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014973' ORDER BY "Line Item Id";
+SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014919' ORDER BY "Line Item Id";
+SELECT * FROM order_report_sch.order_report_g WHERE "Order Id" = '100000005027' ORDER BY "Line Item Id";
+
+
+
+SELECT * FROM public."Orders" WHERE "OrderNumber" = '100000005120';
+
+SELECT 
+  "CreatedOn",
+  TO_CHAR(
+    ("CreatedOn" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Chicago',
+    'MM/DD/YYYY'
+  ) AS created_on_items,
+  (("CreatedOn" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Chicago') AS created_on_utc
+FROM public."OrderItems"
+WHERE "OrderId" = '400f1676-ea82-443d-882d-65ecf8b21668';
