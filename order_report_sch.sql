@@ -120,7 +120,7 @@ SELECT
   site."Name"            AS site_name,
   CONCAT(u."FirstName",' ',u."LastName") AS user_name,
   pa."Name"              AS partner_name,
-  ROUND(COALESCE(site."TaxRate",l."TaxRate")::numeric,2) AS tax_percentage
+  COALESCE(site."TaxRate",l."TaxRate")::numeric AS tax_percentage
 FROM order_report_sch.orders_with_items AS base
 LEFT JOIN public."Products"   p   ON p."Id"           = base.product_id
 LEFT JOIN public."Locations"  l   ON l."Id"           = base.location_id
@@ -160,8 +160,8 @@ LEFT JOIN public."PaymentTransactions" pt
 LEFT JOIN (
   SELECT
     "PaymentTransactionId" AS payment_transaction_id,
-    ROUND(SUM("Amount")::numeric, 2)               AS sum_total_refund_amount,
-    ROUND(SUM("RefundedProcessingFee")::numeric, 2) AS sum_refunded_processing_fee
+    SUM("Amount")::numeric               AS sum_total_refund_amount,
+    SUM("RefundedProcessingFee")::numeric AS sum_refunded_processing_fee
   FROM public."PaymentRefund"
   GROUP BY "PaymentTransactionId"
 ) rf
@@ -210,9 +210,11 @@ SELECT
   ocp.order_number,
   ocp.order_item_id,
   TO_CHAR(
-    (ocp.created_on_items AT TIME ZONE 'UTC') AT TIME ZONE 'America/Chicago',
+    (ocp.created_on_items AT TIME ZONE 'IST') AT TIME ZONE 'America/Chicago',
     'MM/DD/YYYY'
-  )                                           AS created_on_items,
+  )                                           AS created_on_items_ist,
+
+    TO_CHAR(ocp.created_on_items AT TIME ZONE 'America/Chicago','MM/DD/YYYY')  AS created_on_items,
   
   ROUND(ocp.original_amount::numeric, 2)      AS original_amount,
   ROUND(ocp.sum_total_refund_amount::numeric, 2) AS order_level_refund,
@@ -230,9 +232,13 @@ SELECT
   END                                         AS user_name,
   
   COALESCE(ocp.product_name, '')              AS product_name,
-  
-  TO_CHAR((ocp.start_date AT TIME ZONE 'UTC') AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS start_date,
-  TO_CHAR((ocp.end_date   AT TIME ZONE 'UTC') AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS end_date,
+ 
+
+  TO_CHAR((ocp.start_date AT TIME ZONE 'IST') AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS start_date,
+  TO_CHAR((ocp.end_date   AT TIME ZONE 'IST') AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS end_date,
+
+  TO_CHAR(ocp.start_date AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS start_date_n,
+  TO_CHAR(ocp.end_date   AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS end_date_n,
   
   COALESCE(ocp.location_name, '')             AS location_name,
   COALESCE(ocp.site_name, '')                 AS site_name,
@@ -283,7 +289,7 @@ FROM order_report_sch.orders_with_coupons ocp;
 -- CHECK
 SELECT * FROM order_report_sch.order_report_raw WHERE reservation_code = 'LDV0014809' ORDER BY order_item_id;
 SELECT * FROM order_report_sch.order_report_raw WHERE reservation_code = 'LDV0014980' ORDER BY order_item_id;
-SELECT * FROM order_report_sch.order_report_raw WHERE reservation_code = 'LDV0014977' ORDER BY order_item_id;
+SELECT * FROM order_report_sch.order_report_raw WHERE reservation_code = 'LDV0014919' ORDER BY order_item_id;
 ---------------------------------------------------------------------------------------------------
 -- STEP 1.6: order_report_final (round & label, all text blanks)
 ---------------------------------------------------------------------------------------------------
@@ -307,7 +313,6 @@ SELECT
   COALESCE(end_date,'')                                AS "Rental End Date",
   COALESCE(location_name,'')                           AS "Location",
   COALESCE(site_name,'')                               AS "Subsite Location",
-  ''												   AS "Tax Counties",
   COALESCE(total_items::text,'')                       AS "Line Item Sub Total",
   COALESCE(coupon_code,'')                             AS "Promo Code Id",
   COALESCE(ROUND(coupon_discount::numeric,2)::text,'') AS "Coupon Amount",
@@ -328,19 +333,21 @@ SELECT
   COALESCE(ROUND(sales_tax::numeric,2)::text,'')       AS "Tax",
   COALESCE(delivery_fee::text,'')                     AS "Delivery Fee",
   COALESCE(
-  	ROUND(
-    	ROUND(tip::numeric, 2)
-    	+ ROUND(final_line_item_sub_total::numeric, 2)
-    	+ ROUND(line_item_booking_fee::numeric, 2)
-    	+ ROUND(sales_tax::numeric, 2)
-		+ ROUND(delivery_fee::numeric, 2)
-    	- (ROUND(create_line_item_processing_fee::numeric, 2) - ROUND(refund_line_item_processing_fee::numeric, 2)),
-  	2),
- 	 0.00
-			) AS "Total Collected",
+  ROUND(
+    tip::numeric
+    + final_line_item_sub_total::numeric
+    + line_item_booking_fee::numeric
+    + sales_tax::numeric
+    + delivery_fee::numeric
+    - (create_line_item_processing_fee::numeric - refund_line_item_processing_fee::numeric),
+   2),
+   0.00
+  ) AS "Total Collected",
 
   COALESCE(partner_name,'')                            AS "Partner Name",
-  COALESCE(partner_id::text,'')                        AS "Partner Id"
+  COALESCE(partner_id::text,'')                        AS "Partner Id",
+  order_id_original::uuid   							AS order_id_original
+  
 FROM order_report_sch.order_report_raw
 ORDER BY "Line Item Id";
 
@@ -397,6 +404,7 @@ SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014809' ORDER B
 SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014980' ORDER BY "Line Item Id";
 SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014973' ORDER BY "Line Item Id";
 SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014919' ORDER BY "Line Item Id";
+SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014977' ORDER BY "Line Item Id";
 SELECT * FROM order_report_sch.order_report_g WHERE "Order Id" = '100000005027' ORDER BY "Line Item Id";
 
 
