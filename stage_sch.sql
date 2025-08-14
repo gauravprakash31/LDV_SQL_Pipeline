@@ -211,11 +211,18 @@ SELECT
   "TotalAmount",
   "CreatedOn",
   "RefundedCouponDiscount",
+  "RefundedBookingFee",
   "RefundedTip",
   "RefundedDiscount",
   "RefundedTotal",
-  "PaymentProcessingFee"  
-  
+  "PaymentProcessingFee" ,
+  "RefundedSalesTax",
+  "SalesTax",
+  "Discount" ,
+  "BookingFee",
+  "Total",
+  "CouponDiscount",
+  "Tip"
 FROM orders_sch."OrderItemsHistory";
 
 	
