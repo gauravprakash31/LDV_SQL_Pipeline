@@ -9,12 +9,8 @@ CREATE TABLE order_report_sch.dc_orders AS
   -- 1a) Order‐item–level controls
   SELECT
     odcv."OrderId"::text   AS order_id,
-	--odcv."DynamicControlOptionId" AS dc_option_id,
-	--odco."DynamicControlId" AS dc_id,
-	    odc."DisplayName"           AS control_name,
-	odco."Option"               AS control_value,
-    
-    odc."ShowInExport"			AS show_in_export
+	odc."DisplayName"           AS control_name,
+	odco."Option"               AS control_value
 	
   FROM public."OrderDynamicControlValues" odcv
   LEFT JOIN public."OrderDynamicControlOptions" odco ON odcv."DynamicControlOptionId"       = odco."Id"
