@@ -17,39 +17,41 @@ DROP TABLE IF EXISTS transaction_report_sch.orders_item_history_agg;
 CREATE TABLE transaction_report_sch.orders_item_history_agg AS
 WITH earliest_amounts AS (
   SELECT
-    "OrderId",
-    "OrderItemId",
-    "TotalAmount",
-	"CreatedOn",
+    "OrderId"								   AS order_id,
+    "OrderItemId"                        	   AS order_item_id,
+    "TotalAmount"                              AS earliest_total_amount,
+    COALESCE("RefundedTotalAmount", 0.00)      AS refunded_total_item,
+    "CreatedOn"                                AS transaction_date_oih,
+    "RefundedTotal"                            AS refunded_total,
+    "RefundedCouponDiscount"                   AS refunded_coupon,
+    "RefundedTip"                              AS refunded_tip,
+    "RefundedDiscount"                         AS refunded_discount,
+    "RefundedBookingFee"                       AS refunded_booking_fee,
+    "PaymentProcessingFee"                     AS refunded_processing_fee,
+    "RefundedSalesTax"                         AS refunded_sales_tax,
+    "Discount"                                 AS discount_oih,
+	"Total"									   AS total_oih,
+    "SalesTax"                                 AS salestax_oih,
+    "BookingFee"                               AS bookingfee_oih,
+    "DeliveryFee"                              AS deliveryfee_oih,
+    "Tip"                                      AS tip_oih,
+    "CouponDiscount"                           AS coupon_discount_oih,
+	"TotalAmount"							   AS total_amount_oih,
+    
     ROW_NUMBER() OVER (
       PARTITION BY "OrderItemId"
       ORDER BY "CreatedOn" ASC
     ) AS rn
   FROM public."OrderItemsHistory"
   WHERE "RefundedTotalAmount" > 0
-),
-refunded_totals AS (
-  SELECT
-    "OrderItemId",
-    SUM("RefundedTotalAmount") AS refunded_total_item
-  FROM public."OrderItemsHistory"
-  WHERE "RefundedTotalAmount" > 0
-  GROUP BY "OrderItemId"
 )
-SELECT
-  ea."OrderId",
-  ea."OrderItemId" AS order_item_id,
-  ea."CreatedOn",
-  COALESCE(rt.refunded_total_item, 0.00) AS refunded_total_item,
-  ea."TotalAmount" AS earliest_total_amount
+SELECT *
 FROM earliest_amounts ea
-INNER JOIN refunded_totals rt
-  ON rt."OrderItemId" = ea."OrderItemId"
 WHERE ea.rn = 1;
 
 --CHECK
 
-SELECT * FROM transaction_report_sch.orders_item_history_agg WHERE "OrderId" = '977f485c-02c8-4f59-a03d-ad1feb371889' ORDER BY order_item_id;
+SELECT * FROM transaction_report_sch.orders_item_history_agg WHERE order_id= 'b9aa1928-4acf-4f6e-994a-5f9b4c303404' ORDER BY order_item_id;
 
 DROP TABLE IF EXISTS transaction_report_sch.orders_with_items;
 CREATE TABLE transaction_report_sch.orders_with_items AS
@@ -88,7 +90,7 @@ SELECT
   oi."IsALaCarte",
   oi."TotalAmount"          AS total_amount_items,
   rt."Name"					AS rental_type,
-  ih_agg."CreatedOn"		AS transaction_date_oih,
+  ih_agg.transaction_date_oih,
   COALESCE(ih_agg.refunded_total_item,0.00)   AS refunded_total_item,
   COALESCE(ih_agg.earliest_total_amount,0.00)   AS earliest_total_amount,
 
@@ -207,32 +209,6 @@ SELECT * FROM transaction_report_sch.orders_with_coupons
 WHERE order_number = 100000005184 ORDER BY order_item_id;
 
 
----Process History table again
-DROP TABLE IF EXISTS transaction_report_sch.orders_item_history_s;
-
-CREATE TABLE transaction_report_sch.orders_item_history_s AS
-  SELECT
-  
-  	"OrderId"					AS order_id,
-    "OrderItemId"				AS order_item_id,
-    "RefundedTotalAmount",
-    "CreatedOn" 				AS transaction_date_oih ,
-	"RefundedTotal"				AS refunded_total,
-	"RefundedCouponDiscount"    AS refunded_coupon,
-	"RefundedTip"				AS refunded_tip,
-	"RefundedDiscount"			AS refunded_discount,
-	"RefundedBookingFee"		AS refunded_booking_fee,
-	"PaymentProcessingFee"      AS refunded_processing_fee,
-	"RefundedSalesTax"			AS refunded_sales_tax
-	
-	
-  FROM public."OrderItemsHistory"
-  WHERE "RefundedTotalAmount" > 0;
-  
-SELECT * FROM transaction_report_sch.orders_item_history_s
- WHERE order_id = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404' ORDER BY order_item_id;
-
-
 
 ---------------------------------------------------------------------------------------------------
 -- STEP 1.5: payment_report_raw (format dates, prorate fees)
@@ -283,13 +259,29 @@ SELECT
   
   COALESCE(ocp.location_name, '')             AS location_name,
   COALESCE(ocp.site_name, '')                 AS site_name,
-   ''												   AS tax_counties,
-  ROUND((ocp.total_items + COALESCE(oih.refunded_total,0.00))::numeric, 2)          AS line_item_sub_total,
+   ''										  AS tax_counties,
+  CASE
+    WHEN (ocp.refunded_total_item) = 0 THEN ocp.total_items
+    ELSE oih.total_oih
+  END 						                  AS line_item_sub_total,
+ 
   COALESCE(ocp.coupon_code, '')               AS coupon_code,
-  ROUND((ocp.coupon_discount + COALESCE(oih.refunded_coupon,0.00))::numeric*-1, 2)      AS coupon_discount,
 
-  ROUND((ocp.discount + COALESCE(oih.refunded_discount,0.00))::numeric*-1, 2)      AS discount,
-  ROUND((ocp.tip + COALESCE(oih.refunded_tip,0.00))::numeric, 2)      AS tip,
+  CASE
+    WHEN (ocp.refunded_total_item) = 0 THEN ocp.coupon_discount
+    ELSE oih.coupon_discount_oih
+  END                       AS coupon_discount,
+
+  CASE
+    WHEN (ocp.refunded_total_item) = 0 THEN ocp.discount
+    ELSE oih.discount_oih
+  END                       AS discount,
+
+  CASE
+    WHEN (ocp.refunded_total_item) = 0 THEN ocp.tip
+    ELSE oih.tip_oih
+  END                       AS tip,
+  
   
   ROUND(
     ((ocp.total_items + COALESCE(oih.refunded_total,0.00))
@@ -309,7 +301,11 @@ SELECT
   ROUND(ocp.delivery_fee::numeric, 2)         AS delivery_fee,
   
   COALESCE(ocp.partner_name, '')              AS partner_name,
-  ocp.partner_id,
+  
+  CASE
+    WHEN (ocp.partner_id) = 0 THEN NULL
+    ELSE ocp.partner_id
+  END                       				  AS partner_id,
 
   ROUND(ocp.order_booking_fee::numeric, 2)    AS order_booking_fee,
   ROUND(ocp.processing_fee::numeric, 2)       AS processing_fee,
@@ -320,9 +316,10 @@ SELECT
   
   sum_total_refund_amount,
   sum_refunded_processing_fee,
-  refunded_total_item,
+  ocp.refunded_total_item,
   ocp.coupon_discount  AS coupon_discount_original,
   oih.refunded_coupon,
+  ocp.total_items,
   
   
   COALESCE(oih.refunded_total,0.00)			  AS refunded_total
@@ -330,7 +327,7 @@ SELECT
 
 FROM transaction_report_sch.orders_with_coupons ocp
 LEFT JOIN public."OrderHistory" oh ON oh."OrderId" = ocp.order_id
-LEFT JOIN transaction_report_sch.orders_item_history_s oih ON oih.order_item_id = ocp.order_item_id;
+LEFT JOIN transaction_report_sch.orders_item_history_agg oih ON oih.order_item_id = ocp.order_item_id;
 
 -- CHECK
 
@@ -338,35 +335,133 @@ SELECT * FROM transaction_report_sch.payment_rows_temp WHERE order_item_id = '56
 SELECT * FROM transaction_report_sch.payment_rows_temp WHERE reservation_code = 'LDV0014809' ORDER BY order_item_id;
 SELECT * FROM transaction_report_sch.payment_rows_temp WHERE reservation_code = 'LDV0014980' ORDER BY order_item_id;
 
+
+-- Final Calculation step 
+
 DROP TABLE IF EXISTS transaction_report_sch.payment_rows;
 
 CREATE TABLE transaction_report_sch.payment_rows AS
-SELECT *,
-COALESCE(
+SELECT 
+  reservation_code,
+  order_number,
+  order_item_id,
+  created_on_items,
+  original_order_date,
+  transaction_date,
+  timestamp,
+  original_order_date_ist,
+  transaction_date_ist,
+  timestamp_ist,
+  original_line_item_amount,
+  payment_source,
+  transaction_type,
+  payment_type,
+  payment_provider_name,
+  refund_order_number_actual,
+  user_name,
+  product_name,
+  rental_type,
+  start_date_original,
+  end_date_original,
+  start_date_n,
+  end_date_n,
+  start_date,
+  end_date,
+  location_name,
+  site_name,
+  tax_counties,
+  ROUND(COALESCE(line_item_sub_total,0.00)::numeric, 2) AS line_item_sub_total,
+  coupon_code,
+  ROUND(COALESCE(coupon_discount,0.00)::numeric*-1, 2) AS coupon_discount,
+  ROUND(COALESCE(discount,0.00)::numeric*-1, 2) AS discount,
+  ROUND(COALESCE(tip,0.00)::numeric, 2) AS tip,
+
+  ROUND((
+  		(COALESCE(line_item_sub_total,0.00))
+		+ (COALESCE(coupon_discount,0.00)::numeric*-1)
+		+ (COALESCE(discount,0.00)::numeric*-1))::numeric,2)  AS final_line_item_sub_total,
+
+  line_item_booking_fee,
+  create_line_item_processing_fee,
+  tax_percentage,
+  sales_tax,
+  delivery_fee,
+  partner_name,
+  
+  COALESCE(
     ROUND(
         tip::numeric
-        + final_line_item_sub_total::numeric
+        + ((COALESCE(line_item_sub_total,0.00))
+			+ (COALESCE(coupon_discount,0.00)::numeric*-1)
+			+ (COALESCE(discount,0.00)::numeric*-1))::numeric
+		
         + line_item_booking_fee::numeric
         + sales_tax::numeric
         + delivery_fee::numeric
         - (create_line_item_processing_fee)::numeric,
-    2), 0.00) AS total_collected
-
+    2), 0.00) AS total_collected,
+  
+  COALESCE(partner_id::text, '') AS partner_id,
+  order_id_original,
+  sum_total_refund_amount,
+  sum_refunded_processing_fee,
+  refunded_total_item,
+  order_booking_fee,
+  processing_fee,
+  refunded_processing_fee,
+  actual_amount_items,
+  total_order_value
 
 FROM transaction_report_sch.payment_rows_temp;
-
 
 -- CHECK
 
 SELECT * FROM transaction_report_sch.payment_rows WHERE order_item_id = '56826b3c-a00c-42f5-a86e-4790b494dd2a';
-SELECT * FROM transaction_report_sch.payment_rows WHERE reservation_code = 'LDV0014809' ORDER BY order_item_id;
+SELECT DISTINCT  * FROM transaction_report_sch.payment_rows WHERE reservation_code = 'LDV0014809' ORDER BY order_item_id;
 SELECT * FROM transaction_report_sch.payment_rows WHERE reservation_code = 'LDV0014980' ORDER BY order_item_id;
 SELECT * FROM transaction_report_sch.payment_rows WHERE reservation_code = 'LDV0014977' ORDER BY order_item_id;
 
 ---------------------------------------------------------------------------------------------------
 -- STEP 1.6: Refund_report_raw (round & label, all text blanks)
 ---------------------------------------------------------------------------------------------------
-  
+
+DROP TABLE IF EXISTS transaction_report_sch.orders_item_history_agg;
+
+CREATE TABLE transaction_report_sch.orders_item_history_agg AS
+WITH earliest_amounts AS (
+  SELECT
+    "OrderId"								   AS order_id,
+    "OrderItemId"                        	   AS order_item_id,
+    "TotalAmount"                              AS earliest_total_amount,
+    COALESCE("RefundedTotalAmount", 0.00)      AS refunded_total_item,
+    "CreatedOn"                                AS transaction_date_oih,
+    "RefundedTotal"                            AS refunded_total,
+    "RefundedCouponDiscount"                   AS refunded_coupon,
+    "RefundedTip"                              AS refunded_tip,
+    "RefundedDiscount"                         AS refunded_discount,
+    "RefundedBookingFee"                       AS refunded_booking_fee,
+    "PaymentProcessingFee"                     AS refunded_processing_fee,
+    "RefundedSalesTax"                         AS refunded_sales_tax,
+    "Discount"                                 AS discount_oih,
+	"Total"									   AS total_oih,
+    "SalesTax"                                 AS salestax_oih,
+    "BookingFee"                               AS bookingfee_oih,
+    "DeliveryFee"                              AS deliveryfee_oih,
+    "Tip"                                      AS tip_oih,
+    "CouponDiscount"                           AS coupon_discount_oih,
+	"TotalAmount"							   AS total_amount_oih,
+    
+    ROW_NUMBER() OVER (
+      PARTITION BY "OrderItemId"
+      ORDER BY "CreatedOn" ASC
+    ) AS rn
+  FROM public."OrderItemsHistory"
+  WHERE "RefundedTotalAmount" > 0
+)
+SELECT *
+FROM earliest_amounts ea
+WHERE ea.rn = 1;
+
 SELECT * FROM transaction_report_sch.orders_item_history_s
  WHERE order_id = 'b9aa1928-4acf-4f6e-994a-5f9b4c303404' ORDER BY order_item_id;
 
@@ -411,7 +506,7 @@ SELECT
   p.coupon_code,
   ROUND(oih.refunded_coupon::numeric, 2)               AS coupon_discount,
   ROUND(oih.refunded_discount::numeric, 2)             AS discount,
-  ROUND(oih.refunded_tip::numeric * -1, 2)             AS tip,
+  ROUND(oih.refunded_tip::numeric, 2)             AS tip,
   
   ROUND(
     (oih.refunded_total - oih.refunded_coupon - oih.refunded_discount)::numeric * -1, 2
@@ -431,7 +526,7 @@ SELECT
 COALESCE(
     ROUND(
         COALESCE(oih.refunded_tip * -1, 0)::numeric
-      + ((oih.refunded_total - oih.refunded_coupon - oih.refunded_discount) * -1)::numeric
+      + ((oih.refunded_total - oih.refunded_coupon - oih.refunded_discount)::numeric * -1)::numeric
       + COALESCE(oih.refunded_booking_fee, 0)::numeric
       + COALESCE(oih.refunded_sales_tax * -1, 0)::numeric
       + COALESCE(delivery_fee, 0)::numeric
@@ -454,15 +549,15 @@ COALESCE(
   p.order_id_original,
   sum_total_refund_amount,
   sum_refunded_processing_fee,
-  refunded_total_item
+  p.refunded_total_item
 
 FROM transaction_report_sch.payment_rows p
 LEFT JOIN public."OrderHistory" oh ON oh."OrderId" = p.order_id_original
-INNER JOIN transaction_report_sch.orders_item_history_s oih ON oih.order_item_id = p.order_item_id;
+INNER JOIN transaction_report_sch.orders_item_history_agg oih ON oih.order_item_id = p.order_item_id;
 
 
- SELECT * FROM transaction_report_sch.refund_rows
- WHERE order_number = 100000005184 ORDER BY order_item_id;
+ SELECT DISTINCT * FROM transaction_report_sch.refund_rows
+ WHERE order_number = 100000005009 ORDER BY order_item_id;
 
 /* Union of payments and refunds */
 DROP TABLE IF EXISTS transaction_report_sch.transaction_report_raw;
@@ -597,9 +692,12 @@ FROM transaction_report_sch.transaction_report_raw;
 
 -- final validation
 
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_final WHERE "RID" = 'LDV0014809' ORDER BY "Line Item Id";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_final WHERE "RID" = 'LDV0014976' ORDER BY "Line Item Id";
 SELECT * FROM transaction_report_sch.transaction_report_final WHERE "RID" = 'LDV0014980' ORDER BY "Line Item Id";
 
+
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_final WHERE "RID" = 'LDV0014809' ORDER BY "Line Item Id";
+SELECT * FROM transaction_report_sch.transaction_report_final WHERE "RID" = 'LDV0014980' ORDER BY "Line Item Id";
 
 SELECT * FROM transaction_report_sch.transaction_report_final ORDER BY "Line Item Id";
 SELECT count(DISTINCT "Order Id") FROM transaction_report_sch.transaction_report_final;
@@ -648,6 +746,7 @@ JOIN transaction_report_sch.expected_order_ids e
 -- CHECK
 SELECT count(DISTINCT "Order Id") FROM transaction_report_sch.transaction_report_g;
 SELECT count(*) FROM transaction_report_sch.transaction_report_g;
+
 SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014809' ORDER BY "Line Item Id";
 SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014809' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item Id";
 SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014809' and "Refund Order ID" IS NULL ORDER BY "Line Item Id";
@@ -656,23 +755,23 @@ SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" =
 SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014980' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item Id";
 SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014980' and "Refund Order ID" IS NULL ORDER BY "Line Item Id";
 
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014919' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item Id";
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014919' and "Refund Order ID" IS NULL ORDER BY "Line Item Id";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014977' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item Id";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014977' and "Refund Order ID" IS NULL ORDER BY "Line Item Id";
 
 SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014828' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item Id";
 SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014828' and "Refund Order ID" IS NULL ORDER BY "Line Item Id";
 
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014967' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item Id";
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014967' and "Refund Order ID" IS NULL ORDER BY "Line Item Id";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014966' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item Id";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014966' and "Refund Order ID" IS NULL ORDER BY "Line Item Id";
 
-LDV0014967
+
 SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014919' ORDER BY "Line Item Id";
-SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014828' ORDER BY "Line Item Id";
+SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014976' ORDER BY "Line Item Id";
 
 --Other Tests
 
-SELECT * FROM public."Orders" WHERE "OrderNumber" = 100000005009;
+SELECT * FROM public."Orders" WHERE "OrderNumber" = 100000005181;
 SELECT * FROM public."Users" WHERE "Id" = 'e9b660a7-806b-4725-93ab-4367a083ec0b';
-SELECT * FROM public."OrderItemsHistory" WHERE "OrderId" = '977f485c-02c8-4f59-a03d-ad1feb371889' ORDER BY "OrderItemId";
+SELECT * FROM public."OrderItemsHistory" WHERE "OrderId" = 'f69d3ce4-aec3-4c3a-bcc7-3876f4443d6c' ORDER BY "OrderItemId";
 
 SELECT * FROM public."OrderItems" WHERE "OrderId" = '977f485c-02c8-4f59-a03d-ad1feb371889' ORDER BY "Id";
