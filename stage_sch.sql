@@ -202,7 +202,9 @@ FROM orders_sch."OrderItems";
 -- OrderItemsHistory
 DROP TABLE IF EXISTS public."OrderItemsHistory" CASCADE;
 CREATE TABLE public."OrderItemsHistory" AS
+
 SELECT
+
   "Id",
   "OrderItemId",
   "OrderId",
@@ -215,16 +217,16 @@ SELECT
   "RefundedTip",
   "RefundedDiscount",
   "RefundedTotal",
-  "PaymentProcessingFee" ,
   "RefundedSalesTax",
   "SalesTax",
-  "Discount" ,
+  "Discount",
   "BookingFee",
   "Total",
+  "DeliveryFee",
   "CouponDiscount",
   "Tip"
+  
 FROM orders_sch."OrderItemsHistory";
-
 	
 
 -- OrderHistory
@@ -416,4 +418,3 @@ SELECT
   "PaymentTransactionId",
   "RefundedProcessingFee"
 FROM payments_sch."PaymentRefund";
-
