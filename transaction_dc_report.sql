@@ -222,13 +222,13 @@ SELECT
   ocp.order_number,
   ocp.order_item_id,
   ocp.created_on_items,	
-  TO_CHAR(ocp.created_on_items AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS original_order_date,	
+  TO_CHAR(ocp.created_on_items AT TIME ZONE 'America/Chicago', 'DD/MM/YYYY') AS original_order_date,	
   
-  TO_CHAR(ocp.created_on_items AT TIME ZONE 'America/Chicago','MM/DD/YYYY')  AS transaction_date,
+  TO_CHAR(ocp.created_on_items AT TIME ZONE 'America/Chicago','DD/MM/YYYY')  AS transaction_date,
   TO_CHAR(ocp.created_on_items  AT TIME ZONE 'America/Chicago','HH12:MI:SS AM') AS timestamp,
 
-  TO_CHAR((ocp.created_on_items AT TIME ZONE 'IST') AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS original_order_date_ist,
-  TO_CHAR((ocp.created_on_items   AT TIME ZONE 'IST') AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS transaction_date_ist,
+  TO_CHAR((ocp.created_on_items AT TIME ZONE 'IST') AT TIME ZONE 'America/Chicago', 'DD/MM/YYYY') AS original_order_date_ist,
+  TO_CHAR((ocp.created_on_items   AT TIME ZONE 'IST') AT TIME ZONE 'America/Chicago', 'DD/MM/YYYY') AS transaction_date_ist,
   
   TO_CHAR((ocp.created_on_items   AT TIME ZONE 'IST')  AT TIME ZONE 'America/Chicago','HH12:MI:SS AM') AS timestamp_ist,
   
@@ -250,11 +250,11 @@ SELECT
   ocp.rental_type							  AS rental_type,
   ocp.start_date AS start_date_original,
   ocp.end_date  AS end_date_original,
-  TO_CHAR(ocp.start_date AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS start_date_n,
-  TO_CHAR(ocp.end_date   AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS end_date_n,
+  TO_CHAR(ocp.start_date AT TIME ZONE 'America/Chicago', 'DD/MM/YYYY') AS start_date_n,
+  TO_CHAR(ocp.end_date   AT TIME ZONE 'America/Chicago', 'DD/MM/YYYY') AS end_date_n,
 
-  TO_CHAR((ocp.start_date AT TIME ZONE 'IST') AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS start_date,
-  TO_CHAR((ocp.end_date   AT TIME ZONE 'IST') AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS end_date,
+  TO_CHAR((ocp.start_date AT TIME ZONE 'IST') AT TIME ZONE 'America/Chicago', 'DD/MM/YYYY') AS start_date,
+  TO_CHAR((ocp.end_date   AT TIME ZONE 'IST') AT TIME ZONE 'America/Chicago', 'DD/MM/YYYY') AS end_date,
   
   COALESCE(ocp.location_name, '')             AS location_name,
   COALESCE(ocp.site_name, '')                 AS site_name,
@@ -290,8 +290,10 @@ SELECT
 
   ROUND(ocp.line_item_booking_fee::numeric, 2) AS line_item_booking_fee,
 
-  ROUND((ocp.processing_fee * ocp.actual_amount_items / NULLIF(ocp.original_amount, 0))::numeric,2
-  )                                           AS create_line_item_processing_fee,
+COALESCE(
+  ROUND(
+    (ocp.processing_fee * ocp.actual_amount_items / NULLIF(ocp.original_amount, 0))::numeric,
+    2),0.00 ) AS create_line_item_processing_fee,
 
 
   ROUND(ocp.tax_percentage::numeric, 2)       AS tax_percentage,
@@ -302,9 +304,9 @@ SELECT
   COALESCE(ocp.partner_name, '')              AS partner_name,
   
   CASE
-    WHEN (ocp.partner_id) = 0 THEN NULL
-    ELSE ocp.partner_id
-  END                       				  AS partner_id,
+    WHEN ocp.partner_id = 0 THEN ''
+    ELSE COALESCE(ocp.partner_id::text, '')
+  END                                         AS partner_id,
 
   ROUND(ocp.order_booking_fee::numeric, 2)    AS order_booking_fee,
   ROUND(ocp.processing_fee::numeric, 2)       AS processing_fee,
@@ -332,7 +334,7 @@ LEFT JOIN transaction_report_sch.orders_item_history_agg oih ON oih.order_item_i
 
 SELECT * FROM transaction_report_sch.payment_rows_temp WHERE order_item_id = '56826b3c-a00c-42f5-a86e-4790b494dd2a';
 SELECT * FROM transaction_report_sch.payment_rows_temp WHERE reservation_code = 'LDV0014809' ORDER BY order_item_id;
-SELECT * FROM transaction_report_sch.payment_rows_temp WHERE reservation_code = 'LDV0014980' ORDER BY order_item_id;
+SELECT * FROM transaction_report_sch.payment_rows_temp WHERE reservation_code = 'LDV0014803' ORDER BY order_item_id;
 
 
 -- Final Calculation step 
@@ -400,7 +402,7 @@ SELECT
         - (create_line_item_processing_fee)::numeric,
     2), 0.00) AS total_collected,
   
-  COALESCE(partner_id::text, '') AS partner_id,
+  partner_id,
   order_id_original,
   sum_total_refund_amount,
   sum_refunded_processing_fee,
@@ -436,10 +438,10 @@ SELECT
 
   p.original_order_date,
   
-  TO_CHAR(oih.transaction_date_oih   AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS transaction_date,
+  TO_CHAR(oih.transaction_date_oih   AT TIME ZONE 'America/Chicago', 'DD/MM/YYYY') AS transaction_date,
   TO_CHAR(oih.transaction_date_oih   AT TIME ZONE 'America/Chicago','HH12:MI:SS AM') AS timestamp,
   
-  TO_CHAR((oih.transaction_date_oih   AT TIME ZONE 'IST') AT TIME ZONE 'America/Chicago', 'MM/DD/YYYY') AS transaction_date_ist,
+  TO_CHAR((oih.transaction_date_oih   AT TIME ZONE 'IST') AT TIME ZONE 'America/Chicago', 'DD/MM/YYYY') AS transaction_date_ist,
   TO_CHAR((oih.transaction_date_oih   AT TIME ZONE 'IST')  AT TIME ZONE 'America/Chicago','HH12:MI:SS AM') AS timestamp_ist,
   
   p.original_line_item_amount,
@@ -612,7 +614,7 @@ CREATE TABLE transaction_report_sch.transaction_report_pre_dc AS
 SELECT
   COALESCE(reservation_code,     '')                             AS "RID",
   COALESCE(order_number::text,   '')                             AS "Order Id",
-  COALESCE(order_item_id,        '')                             AS "Line Item Id",
+  COALESCE(order_item_id,        '')                             AS "Line Item ID",
   COALESCE(original_order_date,  '')                             AS "Original Order Date",
   COALESCE(transaction_date,     '')                             AS "Transaction Date",
   COALESCE(timestamp,     '')                             		 AS "Time Stamp",
@@ -620,7 +622,7 @@ SELECT
   COALESCE(payment_source,       '')                             AS "Order Type",
   transaction_type												 AS "Transaction Type",
   COALESCE(payment_type,         '')                             AS "Payment Method",
-  COALESCE(payment_provider_name,'')                             AS "Payment Processor",
+  COALESCE(payment_provider_name,'')                             AS "Payment Processer",
   refund_order_number_actual									 AS "Refund Order ID",
   COALESCE(user_name,            '')                             AS "User",
   COALESCE(product_name,         '')                             AS "Product Name",
@@ -630,7 +632,7 @@ SELECT
   COALESCE(location_name,        '')                             AS "Location",
   COALESCE(site_name,            '')                             AS "Subsite Location",
  --   ''												   			 AS "Tax Counties",
-  COALESCE(line_item_sub_total::text, '')                        AS "Line Item Sub Amount",
+  COALESCE(line_item_sub_total::text, '')                        AS "Line Item Sub Total",
   COALESCE(coupon_code,          '')                             AS "Promo Code ID",
   COALESCE(coupon_discount::text,'')                             AS "Coupon Amount",
   COALESCE(discount::text,       '')                             AS "Line Item Discount",
@@ -653,14 +655,14 @@ FROM transaction_report_sch.transaction_report_raw;
 
 -- final validation
 
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_pre_dc WHERE "RID" = 'LDV0014976' ORDER BY "Line Item Id";
-SELECT * FROM transaction_report_sch.transaction_report_pre_dc WHERE "RID" = 'LDV0014980' ORDER BY "Line Item Id";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_pre_dc WHERE "RID" = 'LDV0014976' ORDER BY "Line Item ID";
+SELECT * FROM transaction_report_sch.transaction_report_pre_dc WHERE "RID" = 'LDV0014980' ORDER BY "Line Item ID";
 
 
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_pre_dc WHERE "RID" = 'LDV0014809' ORDER BY "Line Item Id";
-SELECT * FROM transaction_report_sch.transaction_report_pre_dc WHERE "RID" = 'LDV0014980' ORDER BY "Line Item Id";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_pre_dc WHERE "RID" = 'LDV0014809' ORDER BY "Line Item ID";
+SELECT * FROM transaction_report_sch.transaction_report_pre_dc WHERE "RID" = 'LDV0014980' ORDER BY "Line Item ID";
 
-SELECT * FROM transaction_report_sch.transaction_report_pre_dc ORDER BY "Line Item Id";
+SELECT * FROM transaction_report_sch.transaction_report_pre_dc ORDER BY "Line Item ID";
 SELECT count(DISTINCT "Order Id") FROM transaction_report_sch.transaction_report_pre_dc;
 
 
@@ -1039,10 +1041,10 @@ FROM transaction_report_sch.transaction_report_pre_dc r
 LEFT JOIN order_report_sch.order_controls oc
   ON r.order_id_original = oc.order_id::uuid
 LEFT JOIN order_report_sch.product_controls pc
-  ON r."Line Item Id"::uuid = pc.order_item_id_p
+  ON r."Line Item ID"::uuid = pc.order_item_id_p
 LEFT JOIN order_report_sch.location_controls lc
-  ON r."Line Item Id"::uuid = lc.order_item_id_l
-ORDER BY r."Line Item Id";
+  ON r."Line Item ID"::uuid = lc.order_item_id_l
+ORDER BY r."Line Item ID";
 
 ALTER TABLE order_report_sch.order_report_dynamic
 DROP COLUMN order_item_id_p,
@@ -1052,7 +1054,7 @@ DROP COLUMN order_id;
 
 --check
 
-SELECT * FROM order_report_sch.order_report_dynamic WHERE "RID" = 'LDV0014980' ORDER BY "Line Item Id";
+SELECT * FROM order_report_sch.order_report_dynamic WHERE "RID" = 'LDV0014980' ORDER BY "Line Item ID";
 
 --Arranging "Tax Counties" column
 DO $$
@@ -1079,7 +1081,7 @@ BEGIN
       SELECT col, ord
       FROM unnest(string_to_array(col_list, ', ')) WITH ORDINALITY AS t(col, ord)
       UNION ALL
-      SELECT tax_col, 18
+      SELECT tax_col, 19
     ) AS combined
     ORDER BY ord
   ) AS final_order;
@@ -1126,7 +1128,7 @@ BEGIN
   EXECUTE dyn_sql;
 END $$;
 
-SELECT * FROM order_report_sch.transaction_report_final WHERE "RID" = 'LDV0014771' ORDER BY "Line Item Id";
+SELECT * FROM order_report_sch.transaction_report_final WHERE "RID" = 'LDV0014771' ORDER BY "Line Item ID";
 
 
 
@@ -1175,26 +1177,30 @@ JOIN transaction_report_sch.expected_order_ids e
 SELECT count(DISTINCT "Order Id") FROM transaction_report_sch.transaction_report_g;
 SELECT count(*) FROM transaction_report_sch.transaction_report_g;
 
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014771' ORDER BY "Line Item Id";
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014809' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item Id";
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014809' and "Refund Order ID" IS NULL ORDER BY "Line Item Id";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014803' ORDER BY "Line Item ID";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014809' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item ID";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014809' and "Refund Order ID" IS NULL ORDER BY "Line Item ID";
 
 
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014980' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item Id";
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014980' and "Refund Order ID" IS NULL ORDER BY "Line Item Id";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014980' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item ID";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014980' and "Refund Order ID" IS NULL ORDER BY "Line Item ID";
 
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014977' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item Id";
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014977' and "Refund Order ID" IS NULL ORDER BY "Line Item Id";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014977' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item ID";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014977' and "Refund Order ID" IS NULL ORDER BY "Line Item ID";
 
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014828' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item Id";
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014828' and "Refund Order ID" IS NULL ORDER BY "Line Item Id";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014828' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item ID";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014828' and "Refund Order ID" IS NULL ORDER BY "Line Item ID";
 
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014966' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item Id";
-SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014966' and "Refund Order ID" IS NULL ORDER BY "Line Item Id";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014966' and "Refund Order ID" IS NOT NULL ORDER BY "Line Item ID";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014966' and "Refund Order ID" IS NULL ORDER BY "Line Item ID";
+
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g;
+SELECT DISTINCT "RID", "Line Item ID", "Refund Order ID" FROM transaction_report_sch.transaction_report_g;
+SELECT DISTINCT "Line Item ID", "Refund Order ID" FROM transaction_report_sch.transaction_report_g;
 
 
-SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014919' ORDER BY "Line Item Id";
-SELECT * FROM order_report_sch.order_report_g WHERE "RID" = 'LDV0014976' ORDER BY "Line Item Id";
+SELECT DISTINCT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014919' ORDER BY "Line Item ID";
+SELECT * FROM transaction_report_sch.transaction_report_g WHERE "RID" = 'LDV0014976' ORDER BY "Line Item ID";
 
 --Other Tests
 
