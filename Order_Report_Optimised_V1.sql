@@ -133,7 +133,7 @@ main_data AS (
     -- Core joins
     INNER JOIN public."Orders" o ON o."Id" = oi."OrderId"
     LEFT JOIN public."Reservations" r ON r."Id" = o."ReservationId"
-    LEFT JOIN public."PaymentTransactions" pt ON pt."OrderId" = o."Id"
+    LEFT JOIN public."PaymentTransactions" pt ON pt."OrderId" = o."PaymentTransactionId"
     
     -- Lookup tables
     LEFT JOIN public."Products" p ON p."Id" = oi."ProductId"
