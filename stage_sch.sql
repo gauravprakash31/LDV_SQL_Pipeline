@@ -165,6 +165,8 @@ SELECT
   "Id",
   "ReservationId",
   "PaymentTransactionId",
+  "CreatedOn",
+  "ModifiedOn",
   "CreatedBy",
   "BookingFee",
   "Total",
@@ -212,12 +214,14 @@ SELECT
   "RefundedTotalAmount",
   "TotalAmount",
   "CreatedOn",
+  "ModifiedOn",
   "RefundedCouponDiscount",
   "RefundedBookingFee",
   "RefundedTip",
   "RefundedDiscount",
   "RefundedTotal",
   "RefundedSalesTax",
+  "RefundedDeliveryFee",
   "SalesTax",
   "Discount",
   "BookingFee",
@@ -237,7 +241,10 @@ SELECT
   "OrderId",
   "UserId",
   "RefundedTotal",
+  "CreatedOn",
+  "ModifiedOn",
   "RefundOrderNumber"
+
 FROM orders_sch."OrderHistory";
 
 -- Reservations
@@ -245,7 +252,10 @@ DROP TABLE IF EXISTS public."Reservations" CASCADE;
 CREATE TABLE public."Reservations" AS
 SELECT
   "Id",
+  "CreatedOn",
+  "ModifiedOn",
   "ReservationCode"
+
 FROM orders_sch."Reservations";
 
 -- OrderCoupons
@@ -254,6 +264,8 @@ CREATE TABLE public."OrderCoupons" AS
 SELECT
   "OrderId",
   "CouponId",
+  "CreatedOn",
+  "ModifiedOn",
   "OrderItemId"
 FROM orders_sch."OrderCoupons";
 
@@ -262,6 +274,8 @@ DROP TABLE IF EXISTS public."Coupons" CASCADE;
 CREATE TABLE public."Coupons" AS
 SELECT
   "Id",
+  "CreatedOn",
+  "ModifiedOn",
   "CouponCode"
 FROM orders_sch."Coupons";
 
@@ -270,6 +284,8 @@ DROP TABLE IF EXISTS public."OrderDynamicControls" CASCADE;
 CREATE TABLE public."OrderDynamicControls" AS
 SELECT
   "Id",
+  "CreatedOn",
+  "ModifiedOn",
   "DisplayName",
   "ShowInExport"
 FROM orders_sch."DynamicControls";
@@ -278,6 +294,8 @@ DROP TABLE IF EXISTS public."OrderDynamicControlOptions" CASCADE;
 CREATE TABLE public."OrderDynamicControlOptions" AS
 SELECT
   "Id",
+  "CreatedOn",
+  "ModifiedOn",
   "DynamicControlId",
   "Option"
 FROM orders_sch."DynamicControlOptions";
@@ -286,6 +304,8 @@ DROP TABLE IF EXISTS public."OrderDynamicControlValues" CASCADE;
 CREATE TABLE public."OrderDynamicControlValues" AS
 SELECT
   "OrderId",
+  "CreatedOn",
+  "ModifiedOn",
   "DynamicControlOptionId"
 FROM orders_sch."OrderDynamicControlValues";
 
@@ -296,6 +316,8 @@ SELECT
   "OrderItemId",
   "DynamicControlId",
   "DynamicControlOptionId",
+  "CreatedOn",
+  "ModifiedOn",
   "DynamicControlType"
 FROM orders_sch."OrderItemDynamicControls";
 
@@ -307,6 +329,8 @@ DROP TABLE IF EXISTS public."Products" CASCADE;
 CREATE TABLE public."Products" AS
 SELECT
   "Id",
+  "CreatedOn",
+  "ModifiedOn",
   "Name"
 FROM products_sch."Products";
 
@@ -314,6 +338,8 @@ DROP TABLE IF EXISTS public."RentalTypes" CASCADE;
 CREATE TABLE public."RentalTypes" AS
 SELECT
   "Id",
+  "CreatedOn",
+  "ModifiedOn",
   "Name"
 FROM products_sch."RentalTypes";
 
@@ -322,6 +348,8 @@ DROP TABLE IF EXISTS public."ProductDynamicControls" CASCADE;
 CREATE TABLE public."ProductDynamicControls" AS
 SELECT
   "Id",
+  "CreatedOn",
+  "ModifiedOn",
   "DisplayName",
   "ShowInExport"
 FROM products_sch."DynamicControls";
@@ -330,6 +358,8 @@ DROP TABLE IF EXISTS public."ProductDynamicControlOptions" CASCADE;
 CREATE TABLE public."ProductDynamicControlOptions" AS
 SELECT
   "Id",
+  "CreatedOn",
+  "ModifiedOn",
   "DynamicControlId",
   "Option"
 FROM products_sch."DynamicControlOptions";
@@ -338,7 +368,10 @@ DROP TABLE IF EXISTS public."ProductDynamicControlValues" CASCADE;
 CREATE TABLE public."ProductDynamicControlValues" AS
 SELECT
   "ProductId",
-  "DynamicControlOptionId"
+  "CreatedOn",
+  "ModifiedOn",
+  "DynamicControlOptionId",
+  "IsDeleted"
 FROM products_sch."ProductDynamicControlValues";
 
 
@@ -350,6 +383,8 @@ CREATE TABLE public."Locations" AS
 SELECT
   "Id",
   "Name",
+  "CreatedOn",
+  "ModifiedOn",
   "TaxRate"
 FROM locations_sch."Locations";
 
@@ -358,6 +393,8 @@ CREATE TABLE public."LocationDynamicControls" AS
 SELECT
   "Id",
   "DisplayName",
+  "CreatedOn",
+  "ModifiedOn",
   "ShowInExport"
 FROM locations_sch."DynamicControls";
 
@@ -366,6 +403,8 @@ CREATE TABLE public."LocationDynamicControlOptions" AS
 SELECT
   "Id",
   "DynamicControlId",
+  "CreatedOn",
+  "ModifiedOn",
   "Option"
 FROM locations_sch."DynamicControlOptions";
 
@@ -373,7 +412,10 @@ DROP TABLE IF EXISTS public."LocationDynamicControlValues" CASCADE;
 CREATE TABLE public."LocationDynamicControlValues" AS
 SELECT
   "LocationId",
-  "DynamicControlOptionId"
+  "DynamicControlOptionId",
+  "CreatedOn",
+  "ModifiedOn",
+  "IsDeleted"
 FROM locations_sch."LocationDynamicControlValues";
 
 -- USERS
@@ -383,6 +425,8 @@ CREATE TABLE public."Users" AS
 SELECT
   "Id",
   "FirstName",
+  "CreatedOn",
+  "ModifiedOn",
   "LastName"
 FROM users_sch."Users";
 
@@ -393,6 +437,8 @@ DROP TABLE IF EXISTS public."Partners" CASCADE;
 CREATE TABLE public."Partners" AS
 SELECT
   "Id",
+  "CreatedOn",
+  "ModifiedOn",
   "Name"
 FROM payments_sch."Partners";
 
@@ -407,6 +453,7 @@ SELECT
   "PaymentType",
   "Status",
   "CreatedOn",
+  "ModifiedOn",
   "PaymentProviderName"
 FROM payments_sch."PaymentTransactions";
 
@@ -416,5 +463,7 @@ SELECT
   "Id",
   "Amount",
   "PaymentTransactionId",
+  "CreatedOn",
+  "ModifiedOn",
   "RefundedProcessingFee"
 FROM payments_sch."PaymentRefund";
